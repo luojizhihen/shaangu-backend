@@ -236,7 +236,8 @@ export default function MallProductsPage() {
                   '商品名称',
                   '商品编号',
                   '所需积分',
-                  '库存',
+                  '库存量',
+                  '计量单位',
                   '已兑换数量',
                   '每人限兑',
                   '商品状态',
@@ -250,8 +251,9 @@ export default function MallProductsPage() {
                   p.code,
                   p.points,
                   p.stock,
+                  p.unit,
                   p.redeemed,
-                  limitText(p.perPersonLimit),
+                  limitText(p.perPersonLimit, p.unit, p.limitCycle),
                   p.status,
                   p.onlineAt || '—',
                   p.offlineAt || '—',
@@ -282,9 +284,9 @@ export default function MallProductsPage() {
               <TableHead className="min-w-40">商品名称</TableHead>
               <TableHead className="w-40">商品编号</TableHead>
               <TableHead className="w-20">所需积分</TableHead>
-              <TableHead className="w-16">库存</TableHead>
+              <TableHead className="w-20">库存量</TableHead>
               <TableHead className="w-24">已兑换数量</TableHead>
-              <TableHead className="w-20">每人限兑</TableHead>
+              <TableHead className="w-24">每人限兑</TableHead>
               <TableHead className="w-20">商品状态</TableHead>
               <TableHead className="w-40">上架时间</TableHead>
               <TableHead className="w-40">下架时间</TableHead>
@@ -332,15 +334,15 @@ export default function MallProductsPage() {
                   {p.code}
                 </TableCell>
                 <TableCell className="font-mono text-xs">{p.points}</TableCell>
-                <TableCell
-                  className={
-                    p.stock === 0 ? 'font-mono text-xs text-warning' : 'font-mono text-xs'
-                  }
-                >
-                  {p.stock}
+                <TableCell className={p.stock === 0 ? 'text-xs text-warning' : 'text-xs'}>
+                  <span className="font-mono">{p.stock}</span> {p.unit}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{p.redeemed}</TableCell>
-                <TableCell className="text-xs">{limitText(p.perPersonLimit)}</TableCell>
+                <TableCell className="text-xs">
+                  <span className="font-mono">{p.redeemed}</span> {p.unit}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {limitText(p.perPersonLimit, p.unit, p.limitCycle)}
+                </TableCell>
                 <TableCell>
                   <StatusTag tone={productStatusTone(p.status)}>{p.status}</StatusTag>
                 </TableCell>

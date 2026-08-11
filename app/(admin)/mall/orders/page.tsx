@@ -26,6 +26,7 @@ import {
   confirmReceive,
   ORDER_STATUSES,
   orderStatusTone,
+  qtyText,
   useMall,
   type MallOrder,
 } from '@/lib/mall-store'
@@ -200,7 +201,7 @@ export default function MallOrdersPage() {
                   o.dept,
                   o.productName,
                   o.productCode,
-                  o.quantity,
+                  qtyText(o.quantity, o.unit),
                   o.unitPoints,
                   o.totalPoints,
                   o.createdAt,
@@ -269,7 +270,9 @@ export default function MallOrdersPage() {
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {o.productCode}
                 </TableCell>
-                <TableCell className="font-mono text-xs">{o.quantity}</TableCell>
+                <TableCell className="text-xs">
+                  <span className="font-mono">{o.quantity}</span> {o.unit}
+                </TableCell>
                 <TableCell className="font-mono text-xs">{o.unitPoints}</TableCell>
                 <TableCell className="font-mono text-xs text-warning">
                   {o.totalPoints}
@@ -333,7 +336,11 @@ export default function MallOrdersPage() {
               <ConfirmRow label="商品" value={target.productName} />
               <ConfirmRow
                 label="数量"
-                value={<span className="font-mono text-xs">{target.quantity} 件</span>}
+                value={
+                  <span className="text-xs">
+                    <span className="font-mono">{target.quantity}</span> {target.unit}
+                  </span>
+                }
               />
               <ConfirmRow
                 label="消耗积分"
@@ -347,7 +354,7 @@ export default function MallOrdersPage() {
           )}
 
           <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            积分与库存已在会员兑换时结算，本次确认仅登记领取事实，不会再次改动积分或库存；
+            积分与库存已在会员兑换时结算，本次确认��登记领取事实，不会再次改动积分或库存；
             确认人将记录为 <span className="text-foreground">{role.person}</span>。
           </p>
 

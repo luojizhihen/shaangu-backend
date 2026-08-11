@@ -17,9 +17,11 @@ import { TableEmpty, useTableState } from '@/components/content/table-shell'
 import { breadcrumbFor } from '@/lib/nav'
 import {
   getProduct,
+  limitText,
   orderStatusTone,
   productStatusTone,
   putProductsOnline,
+  qtyText,
   takeProductsOffline,
   updateProduct,
   useMall,
@@ -62,7 +64,9 @@ export default function MallProductDetailPage() {
       code: target.code,
       points: target.points,
       stock: target.stock,
+      unit: target.unit,
       perPersonLimit: target.perPersonLimit,
+      limitCycle: target.limitCycle,
       intro: target.intro,
     })
   }, [id])
@@ -156,8 +160,11 @@ export default function MallProductDetailPage() {
         </span>
         <span className="ml-auto flex items-center gap-4 text-xs text-muted-foreground">
           <span>所需积分 {product.points}</span>
-          <span>库存 {product.stock}</span>
-          <span>已兑换 {product.redeemed}</span>
+          <span>库存量 {qtyText(product.stock, product.unit)}</span>
+          <span>已兑换 {qtyText(product.redeemed, product.unit)}</span>
+          <span>
+            每人限兑 {limitText(product.perPersonLimit, product.unit, product.limitCycle)}
+          </span>
         </span>
       </div>
 
@@ -186,7 +193,7 @@ export default function MallProductDetailPage() {
                   <TableHead className="w-20">订单状态</TableHead>
                   <TableHead className="w-28">昵称</TableHead>
                   <TableHead className="w-24">员工姓名</TableHead>
-                  <TableHead className="w-16">数量</TableHead>
+                  <TableHead className="w-20">数量</TableHead>
                   <TableHead className="w-24">订单消耗积分</TableHead>
                   <TableHead className="w-40">兑换时间</TableHead>
                   <TableHead className="w-40 pr-4">确认领取时间</TableHead>
@@ -204,7 +211,9 @@ export default function MallProductDetailPage() {
                     </TableCell>
                     <TableCell>{o.nickname}</TableCell>
                     <TableCell>{o.employee}</TableCell>
-                    <TableCell className="font-mono text-xs">{o.quantity}</TableCell>
+                    <TableCell className="text-xs">
+                      <span className="font-mono">{o.quantity}</span> {o.unit}
+                    </TableCell>
                     <TableCell className="font-mono text-xs">{o.totalPoints}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {o.createdAt}

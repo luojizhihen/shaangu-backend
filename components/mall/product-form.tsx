@@ -4,10 +4,17 @@ import * as React from 'react'
 import { ImagePlus, Trash2, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { Panel, StatusTag } from '@/components/layout/page-frame'
+import { NativeSelect, Panel, StatusTag } from '@/components/layout/page-frame'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { limitText, type MallProduct, type ProductDraft } from '@/lib/mall-store'
+import {
+  limitText,
+  LIMIT_CYCLES,
+  PRODUCT_UNITS,
+  type LimitCycle,
+  type MallProduct,
+  type ProductDraft,
+} from '@/lib/mall-store'
 
 function FormRow({
   label,
@@ -119,29 +126,56 @@ export function ProductForm({
               required
               hint="库存直接在商品上维护；库存为 0 时无法上架，会员端也无法继续兑换"
             >
-              <Input
-                type="number"
-                min={0}
-                value={values.stock}
-                onChange={(e) =>
-                  onChange({ stock: Number.parseInt(e.target.value, 10) || 0 })
-                }
-                className="sm:w-40"
-              />
+              <span className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  aria-label="库存数量"
+                  value={values.stock}
+                  onChange={(e) =>
+                    onChange({ stock: Number.parseInt(e.target.value, 10) || 0 })
+                  }
+                  className="w-32"
+                />
+                <NativeSelect
+                  aria-label="计量单位"
+                  value={values.unit}
+                  onChange={(v) => onChange({ unit: v })}
+                  options={PRODUCT_UNITS}
+                  className="w-24"
+                />
+              </span>
             </FormRow>
 
-            <FormRow label="每人限兑" required hint="填 -1 表示不限制单人兑换数量">
-              <Input
-                type="number"
-                min={-1}
-                value={values.perPersonLimit}
-                onChange={(e) =>
-                  onChange({
-                    perPersonLimit: Number.parseInt(e.target.value, 10) || 0,
-                  })
-                }
-                className="sm:w-40"
-              />
+            <FormRow
+              label="每人限兑"
+              required
+              hint={`当前口径：${limitText(values.perPersonLimit, values.unit, values.limitCycle)}；填 -1 表示不限制单人兑换数量`}
+            >
+              <span className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min={-1}
+                  aria-label="每人限兑数量"
+                  value={values.perPersonLimit}
+                  onChange={(e) =>
+                    onChange({
+                      perPersonLimit: Number.parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  className="w-32"
+                />
+                <span className="text-[13px] text-muted-foreground">
+                  {values.unit} 每
+                </span>
+                <NativeSelect
+                  aria-label="限兑周期"
+                  value={values.limitCycle}
+                  onChange={(v) => onChange({ limitCycle: v as LimitCycle })}
+                  options={LIMIT_CYCLES}
+                  className="w-24"
+                />
+              </span>
             </FormRow>
           </div>
         </Panel>
@@ -227,13 +261,21 @@ export function ProductForm({
                 </StatusTag>
               </div>
               <div className="flex items-center justify-between gap-3">
+                <span className="text-muted-foreground">当前库存</span>
+                <span className="text-xs">
+                  <span className="font-mono">{product.stock}</span> {product.unit}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
                 <span className="text-muted-foreground">已兑换数量</span>
-                <span className="font-mono text-xs">{product.redeemed} 件</span>
+                <span className="text-xs">
+                  <span className="font-mono">{product.redeemed}</span> {product.unit}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-muted-foreground">每人限兑</span>
-                <span className="font-mono text-xs">
-                  {limitText(product.perPersonLimit)}
+                <span className="text-xs">
+                  {limitText(product.perPersonLimit, product.unit, product.limitCycle)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3">

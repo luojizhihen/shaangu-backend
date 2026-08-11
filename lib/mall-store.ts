@@ -24,6 +24,9 @@ import type { BatchResult } from '@/lib/content-store'
 /** 商品状态：由上下架动作驱动，新建后先进入「待上架」 */
 export type ProductStatus = '待上架' | '已上架' | '已下架'
 
+/** 每人限兑的统计周期，与限兑数量组合成「1 个/季度」这类口径 */
+export type LimitCycle = '月' | '季度' | '半年' | '年'
+
 export type MallProduct = {
   id: string
   /** 商品图片，列表与详情共用 */
@@ -35,10 +38,14 @@ export type MallProduct = {
   points: number
   /** 库存，直接在商品上维护 */
   stock: number
+  /** 计量单位，如 支 / 个 / 枚 / 本 / 把 */
+  unit: string
   /** 已兑换数量，由订单累计，不可手工修改 */
   redeemed: number
   /** 每人限兑数量，-1 表示不限 */
   perPersonLimit: number
+  /** 每人限兑的周期，限兑数量为 -1 时不生效 */
+  limitCycle: LimitCycle
   status: ProductStatus
   /** 商品简介 */
   intro: string
@@ -63,6 +70,8 @@ export type MallOrder = {
   productId: string
   productName: string
   productCode: string
+  /** 下单时的计量单位快照，商品后续改名改单位也不影响历史订单 */
+  unit: string
   /** 兑换数量 */
   quantity: number
   /** 消耗积分（单价） */
@@ -81,89 +90,26 @@ export type MallOrder = {
 
 export const PRODUCT_STATUSES: ProductStatus[] = ['待上架', '已上架', '已下架']
 export const ORDER_STATUSES: OrderStatus[] = ['待领取', '已领取']
+export const LIMIT_CYCLES: LimitCycle[] = ['月', '季度', '半年', '年']
+/** 常用计量单位，可在表单中直接选择 */
+export const PRODUCT_UNITS = ['支', '个', '枚', '本', '把', '件', '套']
 
 /* ---------------- 种子数据 ---------------- */
 
 const SEED_PRODUCTS: MallProduct[] = [
   {
-    id: 'MP-06',
-    image: '/images/mall/notebook.png',
-    name: '定制硬壳笔记本',
-    code: 'NO20260728000006',
-    points: 120,
-    stock: 148,
-    redeemed: 52,
-    perPersonLimit: 2,
-    status: '已上架',
-    intro: 'A5 硬壳笔记本，内页 120 页，封面烫印企业标识。',
-    onlineAt: '2026-07-28 10:05:12',
-    offlineAt: '',
-    createdAt: '2026-07-28 09:41:36',
-    creator: '孙可',
-    updatedAt: '2026-08-04 15:20:08',
-  },
-  {
-    id: 'MP-05',
-    image: '/images/mall/bottle.png',
-    name: '不锈钢保温杯',
-    code: 'NO20260716000005',
-    points: 300,
-    stock: 36,
-    redeemed: 84,
-    perPersonLimit: 1,
-    status: '已上架',
-    intro: '316 不锈钢内胆，容量 500ml，保温 12 小时。',
-    onlineAt: '2026-07-16 14:22:40',
-    offlineAt: '',
-    createdAt: '2026-07-16 13:58:02',
-    creator: '孙可',
-    updatedAt: '2026-08-05 16:48:12',
-  },
-  {
-    id: 'MP-04',
-    image: '/images/mall/tote.png',
-    name: '棉麻帆布袋',
-    code: 'NO20260703000004',
-    points: 60,
-    stock: 0,
-    redeemed: 210,
-    perPersonLimit: 3,
-    status: '已上架',
-    intro: '加厚帆布单肩袋，可承重 8kg，日常通勤适用。',
-    onlineAt: '2026-07-03 09:30:18',
-    offlineAt: '',
-    createdAt: '2026-07-02 17:12:55',
-    creator: '王海涛',
-    updatedAt: '2026-08-02 11:04:31',
-  },
-  {
-    id: 'MP-03',
-    image: '/images/mall/tshirt.png',
-    name: '纯棉圆领文化衫',
-    code: 'NO20260620000003',
-    points: 180,
-    stock: 92,
-    redeemed: 46,
-    perPersonLimit: 2,
-    status: '已下架',
-    intro: '260g 纯棉面料，统一版型，暂缺部分尺码故先行下架。',
-    onlineAt: '2026-06-20 10:12:07',
-    offlineAt: '2026-07-30 18:02:44',
-    createdAt: '2026-06-19 16:40:29',
-    creator: '王海涛',
-    updatedAt: '2026-07-30 18:02:44',
-  },
-  {
-    id: 'MP-02',
-    image: '/images/mall/speaker.png',
-    name: '便携蓝牙音箱',
-    code: 'NO20260805000002',
-    points: 800,
-    stock: 24,
+    id: 'MP-09',
+    image: '/images/mall/plush.png',
+    name: '鼓小风毛绒公仔',
+    code: 'NO20260805000009',
+    points: 10000,
+    stock: 15,
+    unit: '个',
     redeemed: 0,
     perPersonLimit: 1,
+    limitCycle: '年',
     status: '待上架',
-    intro: '5W 输出，续航 10 小时，支持蓝牙 5.3。',
+    intro: '鼓小风 IP 形象毛绒公仔，高约 28cm，限量发放。',
     onlineAt: '',
     offlineAt: '',
     createdAt: '2026-08-05 09:26:14',
@@ -171,19 +117,154 @@ const SEED_PRODUCTS: MallProduct[] = [
     updatedAt: '2026-08-05 09:26:14',
   },
   {
-    id: 'MP-01',
-    image: '/images/mall/umbrella.png',
-    name: '三折便携雨伞',
-    code: 'NO20260806000001',
-    points: 90,
-    stock: 60,
-    redeemed: 0,
-    perPersonLimit: 2,
-    status: '待上架',
-    intro: '八骨三折伞，防紫外线涂层，收纳长度 24cm。',
-    onlineAt: '',
+    id: 'MP-08',
+    image: '/images/mall/bottle.png',
+    name: '富光×陕鼓55周年保温杯',
+    code: 'NO20260728000008',
+    points: 2000,
+    stock: 100,
+    unit: '个',
+    redeemed: 26,
+    perPersonLimit: 1,
+    limitCycle: '半年',
+    status: '已上架',
+    intro: '富光联名款，316 不锈钢内胆，容量 500ml，杯身激光雕刻 55 周年标识。',
+    onlineAt: '2026-07-28 10:05:12',
     offlineAt: '',
-    createdAt: '2026-08-06 08:52:30',
+    createdAt: '2026-07-28 09:41:36',
+    creator: '孙可',
+    updatedAt: '2026-08-04 15:20:08',
+  },
+  {
+    id: 'MP-07',
+    image: '/images/mall/tote.png',
+    name: '陕鼓环保帆布袋',
+    code: 'NO20260722000007',
+    points: 2000,
+    stock: 50,
+    unit: '个',
+    redeemed: 18,
+    perPersonLimit: 1,
+    limitCycle: '季度',
+    status: '已上架',
+    intro: '加厚纯棉帆布单肩袋，可承重 8kg，正面丝印陕鼓标识。',
+    onlineAt: '2026-07-22 09:30:18',
+    offlineAt: '',
+    createdAt: '2026-07-21 17:12:55',
+    creator: '王海涛',
+    updatedAt: '2026-08-02 11:04:31',
+  },
+  {
+    id: 'MP-06',
+    image: '/images/mall/umbrella.png',
+    name: '天堂307E升级黑胶伞',
+    code: 'NO20260716000006',
+    points: 2000,
+    stock: 100,
+    unit: '把',
+    redeemed: 31,
+    perPersonLimit: 1,
+    limitCycle: '年',
+    status: '已上架',
+    intro: '天堂 307E 升级款，三折黑胶防晒内层，收纳长度 24cm。',
+    onlineAt: '2026-07-16 14:22:40',
+    offlineAt: '',
+    createdAt: '2026-07-16 13:58:02',
+    creator: '孙可',
+    updatedAt: '2026-08-05 16:48:12',
+  },
+  {
+    id: 'MP-05',
+    image: '/images/mall/notebook.png',
+    name: '“陕鼓”压印笔记本',
+    code: 'NO20260703000005',
+    points: 1500,
+    stock: 50,
+    unit: '本',
+    redeemed: 42,
+    perPersonLimit: 1,
+    limitCycle: '季度',
+    status: '已上架',
+    intro: 'A5 硬壳笔记本，内页 120 页，封面压印“陕鼓”字样。',
+    onlineAt: '2026-07-03 10:12:07',
+    offlineAt: '',
+    createdAt: '2026-07-02 16:40:29',
+    creator: '王海涛',
+    updatedAt: '2026-08-02 15:20:08',
+  },
+  {
+    id: 'MP-04',
+    image: '/images/mall/keychain.png',
+    name: '鼓小风55周年限定钥匙扣',
+    code: 'NO20260620000004',
+    points: 1000,
+    stock: 100,
+    unit: '个',
+    redeemed: 57,
+    perPersonLimit: 1,
+    limitCycle: '季度',
+    status: '已上架',
+    intro: '55 周年限定款金属珐琅钥匙扣，鼓小风形象立体成型。',
+    onlineAt: '2026-06-20 09:18:44',
+    offlineAt: '',
+    createdAt: '2026-06-19 15:02:31',
+    creator: '孙可',
+    updatedAt: '2026-08-01 14:05:39',
+  },
+  {
+    id: 'MP-03',
+    image: '/images/mall/fridge-magnet.png',
+    name: '鼓小风冰箱贴盲盒',
+    code: 'NO20260612000003',
+    points: 1000,
+    stock: 50,
+    unit: '枚',
+    redeemed: 64,
+    perPersonLimit: 1,
+    limitCycle: '月',
+    status: '已下架',
+    intro: '鼓小风系列软胶冰箱贴，共 6 款随机发放，暂因补货先行下架。',
+    onlineAt: '2026-06-12 10:40:22',
+    offlineAt: '2026-07-30 18:02:44',
+    createdAt: '2026-06-11 16:35:09',
+    creator: '王海涛',
+    updatedAt: '2026-07-30 18:02:44',
+  },
+  {
+    id: 'MP-02',
+    image: '/images/mall/phone-grip.png',
+    name: '鼓小风气囊手机支架',
+    code: 'NO20260605000002',
+    points: 800,
+    stock: 50,
+    unit: '个',
+    redeemed: 73,
+    perPersonLimit: 1,
+    limitCycle: '月',
+    status: '已上架',
+    intro: '可折叠气囊支架，背胶反复水洗可用，印鼓小风形象。',
+    onlineAt: '2026-06-05 09:12:36',
+    offlineAt: '',
+    createdAt: '2026-06-04 17:26:48',
+    creator: '孙可',
+    updatedAt: '2026-08-03 09:22:15',
+  },
+  {
+    id: 'MP-01',
+    image: '/images/mall/pen.png',
+    name: '陕鼓定制签字笔',
+    code: 'NO20260528000001',
+    points: 500,
+    stock: 100,
+    unit: '支',
+    redeemed: 128,
+    perPersonLimit: 2,
+    limitCycle: '月',
+    status: '已上架',
+    intro: '金属杆中性签字笔，0.5mm 笔芯，笔夹镌刻陕鼓标识。',
+    onlineAt: '2026-05-28 10:05:41',
+    offlineAt: '',
+    createdAt: '2026-05-27 14:52:30',
     creator: '孙可',
     updatedAt: '2026-08-06 08:52:30',
   },
@@ -197,12 +278,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '筱筱',
     employee: '汪筱',
     dept: '技术中心',
-    productId: 'MP-06',
-    productName: '定制硬壳笔记本',
-    productCode: 'NO20260728000006',
+    productId: 'MP-08',
+    productName: '富光×陕鼓55周年保温杯',
+    productCode: 'NO20260728000008',
+    unit: '个',
     quantity: 1,
-    unitPoints: 120,
-    totalPoints: 120,
+    unitPoints: 2000,
+    totalPoints: 2000,
     createdAt: '2026-08-06 09:12:48',
     receivedAt: '',
     receiver: '',
@@ -214,12 +296,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '一只鹿',
     employee: '鹿鸣',
     dept: '能源互联事业部',
-    productId: 'MP-04',
-    productName: '棉麻帆布袋',
-    productCode: 'NO20260703000004',
+    productId: 'MP-01',
+    productName: '陕鼓定制签字笔',
+    productCode: 'NO20260528000001',
+    unit: '支',
     quantity: 2,
-    unitPoints: 60,
-    totalPoints: 120,
+    unitPoints: 500,
+    totalPoints: 1000,
     createdAt: '2026-08-05 17:40:22',
     receivedAt: '',
     receiver: '',
@@ -231,12 +314,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '风起东南',
     employee: '陆东南',
     dept: '装备制造事业部',
-    productId: 'MP-06',
-    productName: '定制硬壳笔记本',
-    productCode: 'NO20260728000006',
+    productId: 'MP-05',
+    productName: '“陕鼓”压印笔记本',
+    productCode: 'NO20260703000005',
+    unit: '本',
     quantity: 1,
-    unitPoints: 120,
-    totalPoints: 120,
+    unitPoints: 1500,
+    totalPoints: 1500,
     createdAt: '2026-08-05 16:48:12',
     receivedAt: '',
     receiver: '',
@@ -248,12 +332,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '海涛',
     employee: '王海涛',
     dept: '平台管理部',
-    productId: 'MP-05',
-    productName: '不锈钢保温杯',
-    productCode: 'NO20260716000005',
+    productId: 'MP-06',
+    productName: '天堂307E升级黑胶伞',
+    productCode: 'NO20260716000006',
+    unit: '把',
     quantity: 1,
-    unitPoints: 300,
-    totalPoints: 300,
+    unitPoints: 2000,
+    totalPoints: 2000,
     createdAt: '2026-08-04 14:31:50',
     receivedAt: '2026-08-05 10:18:26',
     receiver: '孙可',
@@ -265,12 +350,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '老周同学',
     employee: '周敬',
     dept: '信息安全部',
-    productId: 'MP-04',
-    productName: '棉麻帆布袋',
-    productCode: 'NO20260703000004',
-    quantity: 3,
-    unitPoints: 60,
-    totalPoints: 180,
+    productId: 'MP-07',
+    productName: '陕鼓环保帆布袋',
+    productCode: 'NO20260722000007',
+    unit: '个',
+    quantity: 1,
+    unitPoints: 2000,
+    totalPoints: 2000,
     createdAt: '2026-08-02 11:04:31',
     receivedAt: '2026-08-03 09:22:15',
     receiver: '王海涛',
@@ -282,12 +368,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '筱筱',
     employee: '汪筱',
     dept: '技术中心',
-    productId: 'MP-03',
-    productName: '纯棉圆领文化衫',
-    productCode: 'NO20260620000003',
+    productId: 'MP-04',
+    productName: '鼓小风55周年限定钥匙扣',
+    productCode: 'NO20260620000004',
+    unit: '个',
     quantity: 1,
-    unitPoints: 180,
-    totalPoints: 180,
+    unitPoints: 1000,
+    totalPoints: 1000,
     createdAt: '2026-07-31 15:26:04',
     receivedAt: '2026-08-01 14:05:39',
     receiver: '孙可',
@@ -299,12 +386,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '一只鹿',
     employee: '鹿鸣',
     dept: '能源互联事业部',
-    productId: 'MP-05',
-    productName: '不锈钢保温杯',
-    productCode: 'NO20260716000005',
+    productId: 'MP-03',
+    productName: '鼓小风冰箱贴盲盒',
+    productCode: 'NO20260612000003',
+    unit: '枚',
     quantity: 1,
-    unitPoints: 300,
-    totalPoints: 300,
+    unitPoints: 1000,
+    totalPoints: 1000,
     createdAt: '2026-07-29 10:47:53',
     receivedAt: '2026-07-30 16:31:07',
     receiver: '孙可',
@@ -316,12 +404,13 @@ const SEED_ORDERS: MallOrder[] = [
     nickname: '风起东南',
     employee: '陆东南',
     dept: '装备制造事业部',
-    productId: 'MP-06',
-    productName: '定制硬壳笔记本',
-    productCode: 'NO20260728000006',
-    quantity: 2,
-    unitPoints: 120,
-    totalPoints: 240,
+    productId: 'MP-02',
+    productName: '鼓小风气囊手机支架',
+    productCode: 'NO20260605000002',
+    unit: '个',
+    quantity: 1,
+    unitPoints: 800,
+    totalPoints: 800,
     createdAt: '2026-07-28 11:19:36',
     receivedAt: '2026-07-29 09:03:44',
     receiver: '王海涛',
@@ -372,7 +461,7 @@ export function stamp(d = new Date()) {
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
-let seq = 20
+let seq = 9
 function nextSeq() {
   seq += 1
   return seq
@@ -392,8 +481,14 @@ export function orderStatusTone(s: OrderStatus) {
   return s === '已领取' ? ('success' as const) : ('warning' as const)
 }
 
-export function limitText(limit: number) {
-  return limit < 0 ? '不限' : `${limit} 件`
+/** 每人限兑口径，如「2 支/月」；-1 表示不限 */
+export function limitText(limit: number, unit: string, cycle: LimitCycle) {
+  return limit < 0 ? '不限' : `${limit} ${unit}/${cycle}`
+}
+
+/** 带单位的数量口径，如「100 支」 */
+export function qtyText(qty: number, unit: string) {
+  return `${qty} ${unit}`
 }
 
 /** 生成下一个商品编号，规则与既有编号保持一致 */
@@ -411,7 +506,9 @@ export type ProductDraft = {
   code: string
   points: number
   stock: number
+  unit: string
   perPersonLimit: number
+  limitCycle: LimitCycle
   intro: string
 }
 
@@ -419,9 +516,11 @@ export const EMPTY_PRODUCT_DRAFT: ProductDraft = {
   image: '',
   name: '',
   code: '',
-  points: 100,
-  stock: 10,
+  points: 500,
+  stock: 50,
+  unit: '个',
   perPersonLimit: 1,
+  limitCycle: '月',
   intro: '',
 }
 
@@ -443,12 +542,16 @@ export function validateProduct(
   if (!Number.isInteger(draft.stock) || draft.stock < 0)
     issues.push('库存需为不小于 0 的整数')
 
+  if (!draft.unit.trim()) issues.push('计量单位为必填项')
+
   if (
     !Number.isInteger(draft.perPersonLimit) ||
     draft.perPersonLimit === 0 ||
     draft.perPersonLimit < -1
   )
     issues.push('每人限兑需为正整数，或填 -1 表示不限')
+  else if (draft.perPersonLimit > 0 && draft.perPersonLimit > draft.stock)
+    issues.push('每人限兑不得大于当前库存')
 
   // 编辑时库存不得低于已兑换数量，避免与既有订单矛盾
   const current = editingId ? getProduct(editingId) : undefined
@@ -468,8 +571,10 @@ export function createProduct(draft: ProductDraft, creator: string) {
     code: draft.code.trim(),
     points: draft.points,
     stock: draft.stock,
+    unit: draft.unit.trim(),
     redeemed: 0,
     perPersonLimit: draft.perPersonLimit,
+    limitCycle: draft.limitCycle,
     // 新建商品统一先入「待上架」，需显式上架后才对会员可见
     status: '待上架',
     intro: draft.intro.trim(),
@@ -494,7 +599,9 @@ export function updateProduct(id: string, draft: ProductDraft) {
             code: draft.code.trim(),
             points: draft.points,
             stock: draft.stock,
+            unit: draft.unit.trim(),
             perPersonLimit: draft.perPersonLimit,
+            limitCycle: draft.limitCycle,
             intro: draft.intro.trim(),
             updatedAt: stamp(),
           }
@@ -561,7 +668,7 @@ export function ordersOfProduct(productId: string) {
  *
  * 幂等约束：积分与库存在兑换下单时已结算，
  * 本操作只做「待领取 → 已领取」的状态流转，
- * 已领取订单重复确认直接返回失败，不会二次改动积分或库存。
+ * 已领取订单重复确认直接返回失败，不会二次���动积分或库存。
  */
 export function confirmReceive(id: string, operator: string): BatchResult {
   const order = getOrder(id)
