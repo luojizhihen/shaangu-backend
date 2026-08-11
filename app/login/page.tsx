@@ -13,27 +13,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusTag } from '@/components/layout/page-frame'
-import { ForcePasswordChange } from '@/components/login/force-password-change'
-import {
-  INITIAL_PASSWORD,
-  LOCK_MINUTES,
-  MAX_FAILED,
-  changePassword,
-  clearSecurityState,
-  forceLock,
-  formatRemaining,
-  getAccount,
-  lockRemaining,
-  resetToInitial,
-  verifyPassword,
-} from '@/lib/login-security'
 
-/** 演示账号：初始密码统一为 shaangu@2026；其余账号用于演示异常状态 */
-const LOCKED_ACCOUNT = 'admin.locked'
+/** 演示账号：密码统一为 shaangu@2026；其余账号用于演示异常状态 */
 const DISABLED_ACCOUNT = 'admin.disabled'
 const NO_ROLE_ACCOUNT = 'admin.norole'
 const NETWORK_ACCOUNT = 'admin.offline'
-const PASSWORD = INITIAL_PASSWORD
+const PASSWORD = 'shaangu@2026'
 
 function newCaptcha() {
   return Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(0, 4).toUpperCase()
@@ -50,33 +35,10 @@ export default function LoginPage() {
   const [remember, setRemember] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  /** 锁定剩余毫秒（每秒刷新，用于倒计时与禁用登录） */
-  const [lockLeft, setLockLeft] = React.useState(0)
-  /** 强制修改初始密码：待进入的账号与角色 */
-  const [pending, setPending] = React.useState<{
-    account: string
-    roleKey: RoleKey
-    reason: 'first-login' | 'password-reset'
-  } | null>(null)
 
   React.useEffect(() => {
     setCaptchaCode(newCaptcha())
   }, [])
-
-  // 账号变化 / 每秒轮询：读取该账号的锁定剩余时间，刷新页面后依然生效
-  React.useEffect(() => {
-    const acc = account.trim()
-    if (!acc) {
-      setLockLeft(0)
-      return
-    }
-    const tick = () => setLockLeft(lockRemaining(acc))
-    tick()
-    const timer = window.setInterval(tick, 1000)
-    return () => window.clearInterval(timer)
-  }, [account])
-
-  const locked = lockLeft > 0
 
   React.useEffect(() => {
     if (ready && rememberedAccount) {
@@ -88,12 +50,6 @@ export default function LoginPage() {
   React.useEffect(() => {
     if (ready && signedIn) router.replace('/workbench')
   }, [ready, signedIn, router])
-
-  function enter(acc: string, roleKey: RoleKey) {
-    setRoleKey(roleKey)
-    signIn(acc, remember)
-    router.replace('/workbench')
-  }
 
   function refreshCaptcha() {
     setCaptchaCode(newCaptcha())
@@ -109,17 +65,6 @@ export default function LoginPage() {
       setError('请输入管理员账号和密码。')
       return
     }
-
-    // 锁定期内直接拒绝，不消耗校验码
-    const left = lockRemaining(acc)
-    if (left > 0) {
-      setLockLeft(left)
-      setError(
-        `账号已锁定：连续 ${MAX_FAILED} 次密码错误，请在 ${formatRemaining(left)} 后重试，或联系系统管理员解锁。`,
-      )
-      return
-    }
-
     if (captcha.trim().toUpperCase() !== captchaCode) {
       setError('安全校验码不正确，请重新输入。')
       refreshCaptcha()
@@ -130,14 +75,6 @@ export default function LoginPage() {
     window.setTimeout(() => {
       setLoading(false)
 
-      if (acc === LOCKED_ACCOUNT) {
-        const remaining = forceLock(acc)
-        setLockLeft(remaining)
-        setError(
-          `账号已锁定：连续 ${MAX_FAILED} 次密码错误，请在 ${formatRemaining(remaining)} 后重试，或联系系统管理员解锁。`,
-        )
-        return
-      }
       if (acc === DISABLED_ACCOUNT) {
         setError('账号已停用：该管理员账号已被停用，请联系系统管理员。')
         return
@@ -152,39 +89,15 @@ export default function LoginPage() {
       }
 
       const matched = ROLES.find((r) => r.account === acc)
-      if (!matched) {
+      if (!matched || password !== PASSWORD) {
         setError('账号或密码错误，请重新输入。')
         refreshCaptcha()
         return
       }
 
-      const result = verifyPassword(acc, password)
-      if (result.kind === 'locked' || result.kind === 'just-locked') {
-        setLockLeft(result.remaining)
-        setError(
-          `账号已锁定：连续 ${MAX_FAILED} 次密码错误，账号锁定 ${LOCK_MINUTES} 分钟，剩余 ${formatRemaining(result.remaining)}。`,
-        )
-        refreshCaptcha()
-        return
-      }
-      if (result.kind === 'wrong') {
-        setError(
-          `账号或密码错误，请重新输入。剩余尝试次数 ${result.attemptsLeft} 次，连续 ${MAX_FAILED} 次错误将锁定账号 ${LOCK_MINUTES} 分钟。`,
-        )
-        refreshCaptcha()
-        return
-      }
-      if (result.kind === 'must-change') {
-        const rec = getAccount(acc)
-        setPending({
-          account: acc,
-          roleKey: matched.key as RoleKey,
-          reason: rec.passwordChangedAt === null && rec.failed === 0 ? 'first-login' : 'first-login',
-        })
-        return
-      }
-
-      enter(acc, matched.key as RoleKey)
+      setRoleKey(matched.key as RoleKey)
+      signIn(acc, remember)
+      router.replace('/workbench')
     }, 600)
   }
 
@@ -322,7 +235,7 @@ export default function LoginPage() {
           <div className="mt-5 flex items-start gap-2 rounded-md border border-border bg-surface px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 shrink-0 text-brand-green" />
             <span>
-              首次登录或密码重置后必须修改初始密码；连续 5 次密码错误将锁定账号 30 分钟。
+              本平台仅限公司授权管理员访问，登录行为将记入系统日志。
             </span>
           </div>
 
@@ -350,8 +263,7 @@ export default function LoginPage() {
             </ul>
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
               异常状态演示账号：
-              <span className="font-mono"> admin.locked</span>（锁定）、
-              <span className="font-mono">admin.disabled</span>（停用）、
+              <span className="font-mono"> admin.disabled</span>（停用）、
               <span className="font-mono">admin.norole</span>（无后台权限）、
               <span className="font-mono">admin.offline</span>（网络异常）。
             </p>

@@ -20,7 +20,7 @@ export function PageHeader({
     <div className="mb-4">
       <nav aria-label="面包屑" className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
         {breadcrumb.map((item, i) => (
-          <span key={item} className="flex items-center gap-1">
+          <span key={`${i}-${item}`} className="flex items-center gap-1">
             {i > 0 && <ChevronRight className="size-3" />}
             <span className={i === breadcrumb.length - 1 ? 'text-foreground' : ''}>
               {item}
