@@ -68,6 +68,8 @@ import {
 
 type SortKey = 'sort' | 'views' | 'likes' | 'commentCount' | 'publishedAt'
 
+const TOP_OPTIONS = ['全部', '是', '否']
+
 function statusTone(status: NewsItem['status']) {
   if (status === '已发布') return 'success' as const
   if (status === '草稿') return 'neutral' as const
@@ -88,11 +90,13 @@ export default function NewsListPage() {
   const [status, setStatus] = React.useState('全部状态')
   const [category, setCategory] = React.useState('全部分类')
   const [author, setAuthor] = React.useState('')
+  const [top, setTopFilter] = React.useState('全部')
   const [query, setQuery] = React.useState({
     title: '',
     status: '全部状态',
     category: '全部分类',
     author: '',
+    top: '全部',
   })
   const [sortKey, setSortKey] = React.useState<SortKey>('sort')
   const [asc, setAsc] = React.useState(true)
@@ -112,7 +116,9 @@ export default function NewsListPage() {
       const hitCategory =
         query.category === '全部分类' || n.category === query.category
       const hitAuthor = n.author.includes(query.author.trim())
-      return hitTitle && hitStatus && hitCategory && hitAuthor
+      const hitTop =
+        query.top === '全部' || (query.top === '是' ? n.top : !n.top)
+      return hitTitle && hitStatus && hitCategory && hitAuthor && hitTop
     })
     const dir = asc ? 1 : -1
     return [...filtered].sort((a, b) => {
@@ -128,7 +134,7 @@ export default function NewsListPage() {
   const selectedRows = news.filter((n) => table.selected.includes(n.id))
 
   function search() {
-    setQuery({ title, status, category, author })
+    setQuery({ title, status, category, author, top })
     table.setPage(1)
   }
 
@@ -137,7 +143,14 @@ export default function NewsListPage() {
     setStatus('全部状态')
     setCategory('全部分类')
     setAuthor('')
-    setQuery({ title: '', status: '全部状态', category: '全部分类', author: '' })
+    setTopFilter('全部')
+    setQuery({
+      title: '',
+      status: '全部状态',
+      category: '全部分类',
+      author: '',
+      top: '全部',
+    })
   }
 
   function toggleSort(key: SortKey) {
@@ -234,6 +247,14 @@ export default function NewsListPage() {
             value={author}
             placeholder="请输入创建人"
             onChange={(e) => setAuthor(e.target.value)}
+          />
+        </FilterField>
+        <FilterField label="是否置顶">
+          <NativeSelect
+            aria-label="是否置顶"
+            value={top}
+            onChange={setTopFilter}
+            options={TOP_OPTIONS}
           />
         </FilterField>
       </FilterBar>
@@ -335,6 +356,7 @@ export default function NewsListPage() {
               <TableHead className="w-24">分类</TableHead>
               <TableHead className="w-24">创建人</TableHead>
               <TableHead className="w-24">资讯状态</TableHead>
+              <TableHead className="w-24">是否置顶</TableHead>
               <TableHead className="w-44">发布时间</TableHead>
               <TableHead className="w-24">
                 <SortHead label="排序" k="sort" />
@@ -353,7 +375,7 @@ export default function NewsListPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={12} text="没有符合条件的资讯" />
+              <TableEmpty colSpan={13} text="没有符合条件的资讯" />
             )}
             {table.pageRows.map((n, i) => (
               <TableRow key={n.id}>
@@ -369,7 +391,6 @@ export default function NewsListPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    {n.top && <StatusTag tone="danger">置顶</StatusTag>}
                     <button
                       type="button"
                       onClick={() => router.push(`/content/news/${n.id}`)}
@@ -387,6 +408,12 @@ export default function NewsListPage() {
                 <TableCell>{n.author}</TableCell>
                 <TableCell>
                   <StatusTag tone={statusTone(n.status)}>{n.status}</StatusTag>
+                </TableCell>
+                <TableCell>
+                  {/* 是表示置顶，否表示不置顶 */}
+                  <StatusTag tone={n.top ? 'danger' : 'neutral'}>
+                    {n.top ? '是' : '否'}
+                  </StatusTag>
                 </TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {n.publishedAt || '—'}
