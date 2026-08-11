@@ -15,7 +15,7 @@ import {
   useTableState,
 } from '@/components/content/table-shell'
 import { useForum, type GovernanceObjectType } from '@/lib/forum-store'
-import { exportCsv } from '@/lib/export'
+import { downloadCsv } from '@/lib/export'
 import { breadcrumbFor } from '@/lib/nav'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -108,7 +108,7 @@ export default function ForumGovernanceLogsPage() {
             <Button
               variant="outline"
               onClick={() => {
-                exportCsv(
+                downloadCsv(
                   '论坛治理日志',
                   ['日志编号', '操作时间', '操作人', '角色', '对象类型', '对象编号', '对象摘要', '操作', '原因', '变更前', '变更后'],
                   rows.map((l) => [

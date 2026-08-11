@@ -307,6 +307,11 @@ export const EXTRA_ROUTES: MenuItem[] = [
     path: '/forum/posts/new',
     perm: 'forum.publish',
   },
+  { title: '新建投票帖子', path: '/forum/polls/new', perm: 'forum.publish' },
+  // 投票内容与帖子同属论坛内容治理，菜单不新增入口，仅登记路由权限
+  { title: '投票内容管理', path: '/forum/polls', perm: 'forum.posts' },
+  { title: '官方内容', path: '/forum/official', perm: 'forum.posts' },
+  { title: '论坛治理日志', path: '/forum/governance-logs', perm: 'forum.posts' },
   { title: '新增商品', path: '/mall/products/new', perm: 'mall.products' },
 ]
 
