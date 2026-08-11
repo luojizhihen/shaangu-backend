@@ -95,20 +95,23 @@ export function Field({
 }
 
 export function NativeSelect({
+  id,
   value,
   onChange,
   options,
   className,
   'aria-label': ariaLabel,
 }: {
+  id?: string
   value: string
   onChange: (v: string) => void
-  options: string[]
+  options: readonly string[]
   className?: string
   'aria-label'?: string
 }) {
   return (
     <select
+      id={id}
       value={value}
       aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value)}

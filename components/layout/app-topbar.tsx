@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -41,14 +42,16 @@ export function AppTopbar() {
           <span className="absolute top-1 right-1 size-1.5 rounded-full bg-brand-green" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
-          <DropdownMenuLabel>系统提醒（{NOTICES.length}）</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {NOTICES.map((n) => (
-            <DropdownMenuItem key={n.title} className="flex-col items-start gap-0.5">
-              <span className="text-[13px]">{n.title}</span>
-              <span className="text-xs text-muted-foreground">{n.time}</span>
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>系统提醒（{NOTICES.length}）</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {NOTICES.map((n) => (
+              <DropdownMenuItem key={n.title} className="flex-col items-start gap-0.5">
+                <span className="text-[13px]">{n.title}</span>
+                <span className="text-xs text-muted-foreground">{n.time}</span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -68,31 +71,33 @@ export function AppTopbar() {
           {role.person}｜{role.name}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-72">
-          <DropdownMenuLabel className="flex items-center gap-1.5">
-            <UserCog className="size-3.5" />
-            角色切换（仅供原型演示）
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {ROLES.map((r) => (
-            <DropdownMenuItem
-              key={r.key}
-              onClick={() => {
-                setRoleKey(r.key)
-                toast.success(`已切换为「${r.name}」`, {
-                  description: `菜单、按钮与路由权限同步生效｜数据范围：${r.scope}`,
-                })
-              }}
-              className={cn(
-                'flex-col items-start gap-0.5',
-                r.key === roleKey && 'bg-accent text-accent-foreground',
-              )}
-            >
-              <span className="text-[13px] font-medium">{r.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {r.person}｜{r.scope}
-              </span>
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="flex items-center gap-1.5">
+              <UserCog className="size-3.5" />
+              角色切换（仅供原型演示）
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {ROLES.map((r) => (
+              <DropdownMenuItem
+                key={r.key}
+                onClick={() => {
+                  setRoleKey(r.key)
+                  toast.success(`已切换为「${r.name}」`, {
+                    description: `菜单、按钮与路由权限同步生效｜数据范围：${r.scope}`,
+                  })
+                }}
+                className={cn(
+                  'flex-col items-start gap-0.5',
+                  r.key === roleKey && 'bg-accent text-accent-foreground',
+                )}
+              >
+                <span className="text-[13px] font-medium">{r.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {r.person}｜{r.scope}
+                </span>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => {

@@ -80,7 +80,7 @@ export const ROLES: Role[] = [
       'content.categories',
       'content.news',
       'content.comments',
-      'content.publish',
+      'content.banners',
       'feedback',
     ],
   },
@@ -217,6 +217,11 @@ export const MENU: MenuGroup[] = [
         path: '/content/comments',
         perm: 'content.comments',
       },
+      {
+        title: '资讯轮播位管理',
+        path: '/content/banners',
+        perm: 'content.banners',
+      },
     ],
   },
   {
@@ -303,7 +308,6 @@ export const MENU: MenuGroup[] = [
 /** 菜单之外仍需权限校验的子路由（发布动作、编辑页等） */
 export const EXTRA_ROUTES: MenuItem[] = [
   { title: '新增资讯', path: '/content/news/new', perm: 'content.news' },
-  { title: '发布资讯', path: '/content/news/publish', perm: 'content.publish' },
   { title: '新增视听内容', path: '/media/new', perm: 'media.list' },
   { title: '发布视听内容', path: '/media/publish', perm: 'media.publish' },
   {
