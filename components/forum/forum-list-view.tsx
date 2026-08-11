@@ -190,29 +190,19 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
         title={isPoll ? '投票内容管理' : '帖子管理'}
         actions={
           <>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/forum/governance-logs')}
-            >
-              <ScrollText className="size-4" />
-              治理日志
-            </Button>
+            {isPoll && (
+              <Button
+                variant="outline"
+                onClick={() => router.push('/forum/governance-logs')}
+              >
+                <ScrollText className="size-4" />
+                治理日志
+              </Button>
+            )}
             <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
               <RefreshCcw className="size-4" />
               刷新
             </Button>
-            {canPublish && !isPoll && (
-              <>
-                <Button variant="outline" onClick={() => router.push('/forum/polls/new')}>
-                  <Vote className="size-4" />
-                  新建投票帖子
-                </Button>
-                <Button onClick={() => router.push('/forum/posts/new')}>
-                  <Plus className="size-4" />
-                  新建图文帖子
-                </Button>
-              </>
-            )}
             {canPublish && isPoll && (
               <Button onClick={() => router.push('/forum/polls/new')}>
                 <Plus className="size-4" />
@@ -284,6 +274,18 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
 
       <Panel bodyClassName="p-0">
         <Toolbar>
+          {canPublish && !isPoll && (
+            <>
+              <Button size="sm" onClick={() => router.push('/forum/polls/new')}>
+                <Vote className="size-3.5" />
+                新建投票帖子
+              </Button>
+              <Button size="sm" onClick={() => router.push('/forum/posts/new')}>
+                <Plus className="size-3.5" />
+                新建图文帖子
+              </Button>
+            </>
+          )}
           <Button
             size="sm"
             variant="outline"

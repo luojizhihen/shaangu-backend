@@ -3,10 +3,8 @@
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  Eye,
   GripVertical,
   ImagePlus,
-  Lock,
   Plus,
   Save,
   Send,
@@ -24,7 +22,6 @@ import {
 } from '@/components/layout/page-frame'
 import { RichTextEditor } from '@/components/content/rich-text-editor'
 import { PublishConfirmDialog, ValidationNotice } from '@/components/forum/forum-dialogs'
-import { ForumPreviewDialog } from '@/components/forum/forum-preview'
 import {
   createForumPoll,
   validatePoll,
@@ -77,7 +74,6 @@ export function PollCreateView() {
   const [options, setOptions] = React.useState<DraftOption[]>([newOption(), newOption()])
   const [official, setOfficial] = React.useState(searchParams.get('official') === '1')
   const [issues, setIssues] = React.useState<ValidationIssue[] | null>(null)
-  const [preview, setPreview] = React.useState(false)
   const [confirm, setConfirm] = React.useState(false)
 
   const input: PollDraftInput = {
@@ -139,11 +135,6 @@ export function PollCreateView() {
     router.push(`/forum/polls/${post.id}`)
   }
 
-  function openPreview() {
-    runCheck()
-    setPreview(true)
-  }
-
   function openPublish() {
     const found = runCheck()
     if (found.length > 0) {
@@ -167,12 +158,6 @@ export function PollCreateView() {
         title="新建投票帖子"
         actions={<StatusTag tone="neutral">当前角色：{role.name}</StatusTag>}
       />
-
-      <p className="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/8 px-4 py-2.5 text-xs leading-relaxed text-warning">
-        <Lock className="mt-0.5 size-3.5 shrink-0" />
-        投票帖发布后永久只读：选项、单/多选、截止时间与投票结果全部锁定，不可修改、不可清空、不可延期。如需调整，请先隐藏或逻辑删除原投票，再新建并发布新投票；新投票生成新的内容
-        ID，参与人数与投票结果不迁移。
-      </p>
 
       <div className="grid gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4">
@@ -324,9 +309,6 @@ export function PollCreateView() {
               ))}
             </ul>
 
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              选项数量 {MIN_OPTIONS}-{MAX_OPTIONS} 个，文字不可重复；选择「图片」形式时每个选项都需上传图片。发布后选项与形式即锁定。
-            </p>
           </Panel>
 
           <Panel
@@ -401,9 +383,6 @@ export function PollCreateView() {
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
               />
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                须晚于当前时间。发布后截止时间锁定，不支持延期或提前结束。
-              </p>
             </div>
           </Panel>
 
@@ -442,18 +421,16 @@ export function PollCreateView() {
                   aria-label="以官方账号发布"
                 />
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                发布人：{role.person}（{role.name}）。校验通过后直接发布，不存在提交审核、待审核、审批人或驳回环节。
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-muted-foreground">发布人</span>
+                <span className="text-[13px]">{role.person}</span>
+              </div>
             </div>
           </Panel>
         </div>
       </div>
 
       <div className="sticky bottom-0 -mx-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-6 py-3 backdrop-blur-sm">
-        <span className="mr-auto text-xs text-muted-foreground">
-          发布后选项、模式、截止时间与结果全部锁定
-        </span>
         <Button variant="outline" onClick={() => router.push('/forum/polls')}>
           取消
         </Button>
@@ -461,31 +438,11 @@ export function PollCreateView() {
           <Save className="size-4" />
           保存草稿
         </Button>
-        <Button variant="outline" onClick={openPreview}>
-          <Eye className="size-4" />
-          预览
-        </Button>
         <Button onClick={openPublish}>
           <Send className="size-4" />
           直接发布
         </Button>
       </div>
-
-      <ForumPreviewDialog
-        open={preview}
-        onOpenChange={setPreview}
-        data={{
-          type: '投票',
-          title,
-          body,
-          images: [],
-          cover,
-          official,
-          nickname: official ? '陕鼓融媒官方' : role.person,
-          dept: '党群工作部',
-          poll: { mode, optionMode, deadline: deadline.replace('T', ' '), options },
-        }}
-      />
 
       <PublishConfirmDialog
         open={confirm}

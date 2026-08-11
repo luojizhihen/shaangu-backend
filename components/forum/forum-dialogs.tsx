@@ -30,7 +30,7 @@ export function ValidationNotice({
       <div className="flex items-start gap-2 rounded-md border border-border bg-muted/50 px-3 py-2.5">
         <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <p className="text-xs leading-relaxed text-muted-foreground">
-          保存草稿、预览或发布时将执行必填、格式与敏感词校验。命中敏感词会阻止提交并提示修改，不做自动替换，也不进入人工审核。
+          保存草稿或发布时将执行必填、格式与敏感词校验。命中敏感词会阻止提交并提示修改，不做自动替换，也不进入人工审核。
         </p>
       </div>
     )

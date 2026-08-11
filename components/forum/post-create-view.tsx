@@ -2,14 +2,13 @@
 
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, ImagePlus, Lock, Save, Send, X } from 'lucide-react'
+import { ImagePlus, Save, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
 import { PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
 import { RichTextEditor } from '@/components/content/rich-text-editor'
 import { PublishConfirmDialog, ValidationNotice } from '@/components/forum/forum-dialogs'
-import { ForumPreviewDialog } from '@/components/forum/forum-preview'
 import {
   createForumPost,
   validatePost,
@@ -37,7 +36,6 @@ export function PostCreateView() {
   const [images, setImages] = React.useState<string[]>([])
   const [official, setOfficial] = React.useState(searchParams.get('official') === '1')
   const [issues, setIssues] = React.useState<ValidationIssue[] | null>(null)
-  const [preview, setPreview] = React.useState(false)
   const [confirm, setConfirm] = React.useState(false)
 
   const input: PostDraftInput = { title, body, images, official }
@@ -74,11 +72,6 @@ export function PostCreateView() {
     router.push(`/forum/posts/${post.id}`)
   }
 
-  function openPreview() {
-    runCheck()
-    setPreview(true)
-  }
-
   function openPublish() {
     const found = runCheck()
     if (found.length > 0) {
@@ -102,12 +95,6 @@ export function PostCreateView() {
         title="新建普通图文帖子"
         actions={<StatusTag tone="neutral">当前角色：{role.name}</StatusTag>}
       />
-
-      <p className="mb-4 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/8 px-4 py-2.5 text-xs leading-relaxed text-warning">
-        <Lock className="mt-0.5 size-3.5 shrink-0" />
-        普通图文帖发布后不可编辑；如需修正，请先隐藏或逻辑删除原帖，再新建并发布修正版。新帖生成新的内容
-        ID，原帖浏览、点赞与评论数据不会迁移。
-      </p>
 
       <div className="grid gap-4 pb-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-4">
@@ -207,9 +194,6 @@ export function PostCreateView() {
                 )}
               </div>
             )}
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              图片为可选项，建议单张不超过 5 MB；图文帖不含投票选项、截止时间等投票字段。
-            </p>
           </Panel>
         </div>
 
@@ -249,18 +233,16 @@ export function PostCreateView() {
                   aria-label="以官方账号发布"
                 />
               </div>
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                发布人：{role.person}（{role.name}）。校验通过后直接发布，不存在提交审核、待审核、审批人或驳回环节。
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] text-muted-foreground">发布人</span>
+                <span className="text-[13px]">{role.person}</span>
+              </div>
             </div>
           </Panel>
         </div>
       </div>
 
       <div className="sticky bottom-0 -mx-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-6 py-3 backdrop-blur-sm">
-        <span className="mr-auto text-xs text-muted-foreground">
-          发布后只读 · 修正需隐藏或逻辑删除原帖后重新发布
-        </span>
         <Button variant="outline" onClick={() => router.push('/forum/posts')}>
           取消
         </Button>
@@ -268,30 +250,11 @@ export function PostCreateView() {
           <Save className="size-4" />
           保存草稿
         </Button>
-        <Button variant="outline" onClick={openPreview}>
-          <Eye className="size-4" />
-          预览
-        </Button>
         <Button onClick={openPublish}>
           <Send className="size-4" />
           直接发布
         </Button>
       </div>
-
-      <ForumPreviewDialog
-        open={preview}
-        onOpenChange={setPreview}
-        data={{
-          type: '普通图文',
-          title,
-          body,
-          images,
-          cover: '',
-          official,
-          nickname: official ? '陕鼓融媒官方' : role.person,
-          dept: '党群工作部',
-        }}
-      />
 
       <PublishConfirmDialog
         open={confirm}
