@@ -83,7 +83,7 @@ export function AppTopbar() {
       {/* 任务状态 */}
       <button
         type="button"
-        onClick={() => router.push('/system/tasks')}
+        onClick={() => router.push('/logs/system')}
         className="flex h-8 items-center gap-2 rounded-md border border-white/25 px-2.5 text-xs hover:bg-white/10"
       >
         <Activity className="size-4" />

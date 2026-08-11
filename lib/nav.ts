@@ -61,11 +61,12 @@ export const ROLES: Role[] = [
     scope: '授权部门数据',
     perms: [
       'workbench',
-      'analytics',
-      'users',
-      'departments',
       'messages',
       'feedback',
+      'system.users',
+      'system.depts',
+      'logs.online',
+      'logs.login',
     ],
   },
   {
@@ -79,7 +80,7 @@ export const ROLES: Role[] = [
       'content.categories',
       'content.news',
       'content.comments',
-      'content.banners',
+      'content.publish',
       'feedback',
     ],
   },
@@ -91,9 +92,9 @@ export const ROLES: Role[] = [
     scope: '视听栏目数据',
     perms: [
       'workbench',
-      'media.categories',
       'media.list',
       'media.comments',
+      'media.publish',
       'feedback',
     ],
   },
@@ -122,10 +123,7 @@ export const ROLES: Role[] = [
       'forum.posts',
       'forum.publish',
       'forum.comments',
-      'forum.polls',
-      'forum.official',
       'forum.words',
-      'forum.logs',
     ],
   },
   {
@@ -138,7 +136,6 @@ export const ROLES: Role[] = [
       'workbench',
       'points.rules',
       'points.logs',
-      'points.clear',
       'mall.products',
       'mall.orders',
     ],
@@ -151,14 +148,20 @@ export const ROLES: Role[] = [
     scope: '系统与任务数据',
     perms: [
       'workbench',
-      'system.settings',
+      'system.menus',
+      'system.users',
+      'system.roles',
+      'system.params',
+      'system.codes',
       'system.agreements',
-      'system.ncsync',
-      'system.wecom',
-      'system.migration',
-      'system.tasks',
-      'system.audit',
-      'users',
+      'system.ads',
+      'system.depts',
+      'logs.online',
+      'logs.login',
+      'logs.export',
+      'logs.delete',
+      'logs.system',
+      'logs.api',
     ],
   },
 ]
@@ -185,6 +188,8 @@ export type MenuItem = {
 export type MenuGroup = {
   title: string
   icon: LucideIcon
+  /** 一级菜单直达页面（无下级菜单时使用，如工作台） */
+  path?: string
   perm?: string
   children: MenuItem[]
 }
@@ -193,10 +198,9 @@ export const MENU: MenuGroup[] = [
   {
     title: '工作台',
     icon: Gauge,
-    children: [
-      { title: '工作台', path: '/workbench', perm: 'workbench' },
-      { title: '运营数据统计', path: '/analytics', perm: 'analytics' },
-    ],
+    path: '/workbench',
+    perm: 'workbench',
+    children: [],
   },
   {
     title: '内容管理',
@@ -213,18 +217,12 @@ export const MENU: MenuGroup[] = [
         path: '/content/comments',
         perm: 'content.comments',
       },
-      { title: '轮播图管理', path: '/content/banners', perm: 'content.banners' },
     ],
   },
   {
     title: '视听管理',
     icon: PlayCircle,
     children: [
-      {
-        title: '视听类目管理',
-        path: '/media/categories',
-        perm: 'media.categories',
-      },
       { title: '视频与音频管理', path: '/media/list', perm: 'media.list' },
       { title: '视听评论管理', path: '/media/comments', perm: 'media.comments' },
     ],
@@ -234,15 +232,16 @@ export const MENU: MenuGroup[] = [
     icon: MessagesSquare,
     children: [
       { title: '帖子管理', path: '/forum/posts', perm: 'forum.posts' },
-      { title: '评论与回复管理', path: '/forum/comments', perm: 'forum.comments' },
-      { title: '投票内容管理', path: '/forum/polls', perm: 'forum.polls' },
-      { title: '官方内容与回复', path: '/forum/official', perm: 'forum.official' },
+      {
+        title: '评论与回复管理',
+        path: '/forum/comments',
+        perm: 'forum.comments',
+      },
       {
         title: '敏感词管理',
         path: '/forum/sensitive-words',
         perm: 'forum.words',
       },
-      { title: '治理日志', path: '/forum/governance-logs', perm: 'forum.logs' },
     ],
   },
   {
@@ -251,30 +250,14 @@ export const MENU: MenuGroup[] = [
     children: [
       { title: '积分规则', path: '/points/rules', perm: 'points.rules' },
       { title: '积分日志', path: '/points/logs', perm: 'points.logs' },
-      {
-        title: '年度清零与提醒',
-        path: '/points/annual-clear',
-        perm: 'points.clear',
-      },
     ],
   },
   {
-    title: '商城管理',
+    title: '积分商城',
     icon: Store,
     children: [
       { title: '商品管理', path: '/mall/products', perm: 'mall.products' },
       { title: '订单管理', path: '/mall/orders', perm: 'mall.orders' },
-    ],
-  },
-  {
-    title: '用户与权限',
-    icon: Users,
-    children: [
-      { title: '用户列表', path: '/users', perm: 'users' },
-      { title: '部门管理', path: '/departments', perm: 'departments' },
-      { title: '管理员账号', path: '/admins', perm: 'admins' },
-      { title: '角色管理', path: '/roles', perm: 'roles' },
-      { title: '菜单管理与访问控制', path: '/menus', perm: 'menus' },
     ],
   },
   {
@@ -286,28 +269,33 @@ export const MENU: MenuGroup[] = [
     ],
   },
   {
-    title: '系统与集成',
+    title: '系统管理',
     icon: Settings,
     children: [
-      { title: '系统设置', path: '/system/settings', perm: 'system.settings' },
+      { title: '菜单管理', path: '/system/menus', perm: 'system.menus' },
+      { title: '用户管理', path: '/system/users', perm: 'system.users' },
+      { title: '角色管理', path: '/system/roles', perm: 'system.roles' },
+      { title: '参数管理', path: '/system/params', perm: 'system.params' },
+      { title: '通用代码', path: '/system/codes', perm: 'system.codes' },
       {
-        title: '协议与关于我们',
+        title: '协议管理',
         path: '/system/agreements',
         perm: 'system.agreements',
       },
-      { title: '用友 NC 同步', path: '/system/nc-sync', perm: 'system.ncsync' },
-      {
-        title: '企业微信 H5 SSO',
-        path: '/system/wecom-sso',
-        perm: 'system.wecom',
-      },
-      {
-        title: '资讯图文迁移',
-        path: '/system/migration',
-        perm: 'system.migration',
-      },
-      { title: '任务监控', path: '/system/tasks', perm: 'system.tasks' },
-      { title: '审计日志', path: '/system/audit-logs', perm: 'system.audit' },
+      { title: '广告组件', path: '/system/ads', perm: 'system.ads' },
+      { title: '部门管理', path: '/system/departments', perm: 'system.depts' },
+    ],
+  },
+  {
+    title: '系统日志',
+    icon: ScrollText,
+    children: [
+      { title: '在线用户', path: '/logs/online', perm: 'logs.online' },
+      { title: '登录日志', path: '/logs/login', perm: 'logs.login' },
+      { title: '导出日志', path: '/logs/export', perm: 'logs.export' },
+      { title: '删除日志', path: '/logs/delete', perm: 'logs.delete' },
+      { title: '系统日志', path: '/logs/system', perm: 'logs.system' },
+      { title: '接口日志', path: '/logs/api', perm: 'logs.api' },
     ],
   },
 ]
@@ -323,11 +311,16 @@ export const EXTRA_ROUTES: MenuItem[] = [
     path: '/forum/posts/new',
     perm: 'forum.publish',
   },
-  { title: '新建投票帖子', path: '/forum/polls/new', perm: 'forum.publish' },
   { title: '新增商品', path: '/mall/products/new', perm: 'mall.products' },
 ]
 
+/** 一级直达菜单（无下级菜单）也纳入路由表 */
+const LEAF_GROUPS: MenuItem[] = MENU.filter(
+  (g) => g.children.length === 0 && g.path,
+).map((g) => ({ title: g.title, path: g.path as string, perm: g.perm ?? '' }))
+
 export const ALL_ROUTES: MenuItem[] = [
+  ...LEAF_GROUPS,
   ...MENU.flatMap((g) => g.children),
   ...EXTRA_ROUTES,
 ]
@@ -348,6 +341,10 @@ export function routeTitle(path: string): string {
 export function breadcrumbFor(path: string): string[] {
   const meta = routeMeta(path)
   if (!meta) return ['陕鼓融媒管理平台']
+  // 一级直达菜单只显示自身，不重复层级
+  if (MENU.some((g) => g.children.length === 0 && g.path === meta.path)) {
+    return [meta.title]
+  }
   const group = MENU.find((g) => g.children.some((c) => c.path === meta.path))
   const trail = group ? [group.title] : ['工作区']
   return [...trail, meta.title]
@@ -358,7 +355,11 @@ export function menuForRole(role: Role): MenuGroup[] {
   return MENU.map((g) => ({
     ...g,
     children: g.children.filter((c) => can(role, c.perm)),
-  })).filter((g) => g.children.length > 0)
+  })).filter((g) =>
+    g.children.length === 0 && g.path
+      ? can(role, g.perm ?? '')
+      : g.children.length > 0,
+  )
 }
 
 export const ICONS = {
@@ -374,4 +375,5 @@ export const ICONS = {
   ScrollText,
   ShieldCheck,
   ShoppingBag,
+  Users,
 }

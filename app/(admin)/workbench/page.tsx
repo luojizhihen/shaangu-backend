@@ -115,7 +115,7 @@ export default function WorkbenchPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={['工作台', '工作台']}
+        breadcrumb={['工作台']}
         title="工作台"
         description={`运营待办优先展示，指标与图表可下钻到对应列表并保留筛选条件。数据更新时间 ${DATA_UPDATED_AT}｜当前数据权限范围：${role.scope}。`}
         actions={

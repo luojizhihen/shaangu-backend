@@ -16,13 +16,18 @@ export function AppSidebar() {
   const pathname = usePathname()
   const groups = React.useMemo(() => menuForRole(role), [role])
 
-  const activeGroup = groups.find((g) =>
-    g.children.some((c) => pathname === c.path || pathname.startsWith(c.path + '/')),
+  const isActivePath = (p: string) =>
+    pathname === p || pathname.startsWith(p + '/')
+
+  const activeGroup = groups.find(
+    (g) =>
+      (g.path && isActivePath(g.path)) ||
+      g.children.some((c) => isActivePath(c.path)),
   )
   const [open, setOpen] = React.useState<string[]>([])
 
   React.useEffect(() => {
-    if (activeGroup) {
+    if (activeGroup && activeGroup.children.length > 0) {
       setOpen((prev) =>
         prev.includes(activeGroup.title) ? prev : [...prev, activeGroup.title],
       )
@@ -59,6 +64,8 @@ export function AppSidebar() {
           const Icon = group.icon
           const isOpen = open.includes(group.title)
           const groupActive = activeGroup?.title === group.title
+          const isLeaf = group.children.length === 0 && !!group.path
+          const targetPath = group.path ?? group.children[0]?.path ?? '/workbench'
 
           if (collapsed) {
             return (
@@ -67,7 +74,7 @@ export function AppSidebar() {
                   <TooltipTrigger
                     render={
                       <Link
-                        href={group.children[0].path}
+                        href={targetPath}
                         className={cn(
                           'flex h-10 items-center justify-center rounded-md',
                           groupActive
@@ -82,6 +89,26 @@ export function AppSidebar() {
                   </TooltipTrigger>
                   <TooltipContent side="right">{group.title}</TooltipContent>
                 </Tooltip>
+              </div>
+            )
+          }
+
+          // 无下级菜单的一级项（工作台）直接作为链接
+          if (isLeaf) {
+            return (
+              <div key={group.title} className="px-2">
+                <Link
+                  href={targetPath}
+                  className={cn(
+                    'flex h-10 w-full items-center gap-2 rounded-md px-2.5 text-sm transition-colors',
+                    groupActive
+                      ? 'bg-nav-active font-medium text-white'
+                      : 'text-nav-foreground/85 hover:bg-nav-hover hover:text-white',
+                  )}
+                >
+                  <Icon className="size-[18px] shrink-0" />
+                  <span className="flex-1 text-left">{group.title}</span>
+                </Link>
               </div>
             )
           }

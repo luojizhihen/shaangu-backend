@@ -46,8 +46,8 @@ export const TODOS: Todo[] = [
     dept: '信息管理部',
     level: '高',
     createdAt: '2026-08-11 02:14',
-    target: '/system/nc-sync',
-    perm: 'system.ncsync',
+    target: '/logs/api',
+    perm: 'logs.api',
   },
   {
     id: 'TD-20260811-004',
@@ -96,11 +96,11 @@ export const TODOS: Todo[] = [
 ]
 
 export const KPIS = [
-  { label: '总用户', value: '8,642', note: '在职 7,318 / 退休 1,324', target: '/users', perm: 'users' },
-  { label: '今日活跃', value: '3,105', note: '较昨日 +4.2%', target: '/analytics', perm: 'analytics' },
+  { label: '总用户', value: '8,642', note: '在职 7,318 / 退休 1,324', target: '/system/users', perm: 'system.users' },
+  { label: '今日活跃', value: '3,105', note: '较昨日 +4.2%', target: '/logs/online', perm: 'logs.online' },
   { label: '资讯总量', value: '1,286', note: '已发布 1,164', target: '/content/news', perm: 'content.news' },
   { label: '视听总量', value: '412', note: '视频 268 / 音频 144', target: '/media/list', perm: 'media.list' },
-  { label: '今日阅读', value: '12,478', note: '资讯 9,204 / 视听 3,274', target: '/analytics', perm: 'analytics' },
+  { label: '今日阅读', value: '12,478', note: '资讯 9,204 / 视听 3,274', target: '/content/news', perm: 'content.news' },
   { label: '今日互动量', value: '2,864', note: '点赞 1,932 / 评论 932', target: '/content/comments', perm: 'content.comments' },
   { label: '今日积分发放', value: '18,420', note: '浏览 9,860 / 点赞 4,120', target: '/points/logs', perm: 'points.logs' },
   { label: '待领取订单', value: '28', note: '超 7 天未领取 6', target: '/mall/orders', perm: 'mall.orders' },
@@ -154,22 +154,22 @@ export const SYSTEM_STATUS = [
     name: '用友 NC 每日定时同步',
     detail: '批次 NC-20260811-0200 · 成功 8,614 · 异常 3',
     state: '异常待处理' as const,
-    target: '/system/nc-sync',
-    perm: 'system.ncsync',
+    target: '/logs/api',
+    perm: 'logs.api',
   },
   {
-    name: '年度清零提醒任务',
-    detail: '2026-12-31 不清零；2027 起每年 12 月 31 日清零',
+    name: '积分规则与发放任务',
+    detail: '每日积分上限校验正常 · 规则版本 V2.3',
     state: '正常' as const,
-    target: '/points/annual-clear',
-    perm: 'points.clear',
+    target: '/points/rules',
+    perm: 'points.rules',
   },
   {
     name: '对象存储与媒体处理',
     detail: '媒体转码队列 2 个任务排队 · 存储可用',
     state: '正常' as const,
-    target: '/system/tasks',
-    perm: 'system.tasks',
+    target: '/logs/system',
+    perm: 'logs.system',
   },
 ]
 
