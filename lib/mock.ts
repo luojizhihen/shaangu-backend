@@ -213,6 +213,68 @@ export const SYSTEM_STATUS = [
   },
 ]
 
+/** 快捷入口：高频操作直达业务页，按权限过滤后展示 */
+export const SHORTCUTS = [
+  { label: '新增资讯', desc: '创建图文资讯并送审', target: '/content/news/new', perm: 'content.news' },
+  { label: '发布资讯', desc: '待发布草稿一键发布', target: '/content/news/publish', perm: 'content.publish' },
+  { label: '上传视听', desc: '上传视频或音频内容', target: '/media/new', perm: 'media.list' },
+  { label: '发帖', desc: '新建普通图文帖子', target: '/forum/posts/new', perm: 'forum.publish' },
+  { label: '敏感词', desc: '维护论坛敏感词库', target: '/forum/sensitive-words', perm: 'forum.words' },
+  { label: '积分规则', desc: '调整获取与消耗规则', target: '/points/rules', perm: 'points.rules' },
+  { label: '订单发放', desc: '处理待领取订单', target: '/mall/orders', perm: 'mall.orders' },
+  { label: '反馈处理', desc: '回复员工意见反馈', target: '/feedback', perm: 'feedback' },
+  { label: '用户管理', desc: '查看员工与账号', target: '/system/users', perm: 'system.users' },
+  { label: '导出日志', desc: '查看导出任务记录', target: '/logs/export', perm: 'logs.export' },
+]
+
+/** 内容概览：各内容体裁的状态分布，点击下钻到对应列表 */
+export const CONTENT_OVERVIEW = [
+  { name: '资讯', total: 1286, published: 1164, draft: 86, review: 24, offline: 12, target: '/content/news', perm: 'content.news' },
+  { name: '视频', total: 268, published: 244, draft: 14, review: 8, offline: 2, target: '/media/list', perm: 'media.list' },
+  { name: '音频', total: 144, published: 132, draft: 6, review: 4, offline: 2, target: '/media/list', perm: 'media.list' },
+  { name: '帖子', total: 2483, published: 2402, draft: 0, review: 47, offline: 34, target: '/forum/posts', perm: 'forum.posts' },
+]
+
+/** 后台任务状态：定时同步、转码、积分结算等 */
+export const SCHEDULED_TASKS = [
+  {
+    name: '用友 NC 员工同步',
+    schedule: '每日 02:00',
+    lastRun: '2026-08-11 02:14',
+    state: '异常待处理' as const,
+    detail: '成功 8,614 条，异常 3 条重复工号待人工确认',
+    target: '/logs/api',
+    perm: 'logs.api',
+  },
+  {
+    name: '媒体转码队列',
+    schedule: '实时触发',
+    lastRun: '2026-08-11 08:22',
+    state: '运行中' as const,
+    detail: '2 个任务排队，平均耗时 3 分 12 秒',
+    target: '/logs/system',
+    perm: 'logs.system',
+  },
+  {
+    name: '每日积分结算',
+    schedule: '每日 06:00',
+    lastRun: '2026-08-11 06:00',
+    state: '成功' as const,
+    detail: '结算 7,318 人，发放 18,420 分，规则版本 V2.3',
+    target: '/points/logs',
+    perm: 'points.logs',
+  },
+  {
+    name: '内容热度重算',
+    schedule: '每 30 分钟',
+    lastRun: '2026-08-11 08:30',
+    state: '成功' as const,
+    detail: '重算 1,698 条内容热度分值',
+    target: '/logs/system',
+    perm: 'logs.system',
+  },
+]
+
 /* ---------------- 运营数据（/analytics）筛选维度与指标 ---------------- */
 
 export const COMPANIES = [
