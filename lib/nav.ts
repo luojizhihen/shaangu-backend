@@ -130,6 +130,7 @@ export const ROLES: Role[] = [
       'workbench',
       'points.rules',
       'points.logs',
+      'points.clear',
       'mall.products',
       'mall.orders',
     ],
@@ -245,6 +246,7 @@ export const MENU: MenuGroup[] = [
     children: [
       { title: '积分规则', path: '/points/rules', perm: 'points.rules' },
       { title: '积分日志', path: '/points/logs', perm: 'points.logs' },
+      { title: '年度清零', path: '/points/annual-clear', perm: 'points.clear' },
     ],
   },
   {
