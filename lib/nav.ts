@@ -89,13 +89,8 @@ export const ROLES: Role[] = [
     account: 'admin.media',
     person: '赵启明',
     scope: '视听栏目数据',
-    perms: [
-      'workbench',
-      'media.list',
-      'media.comments',
-      'media.publish',
-      'feedback',
-    ],
+    // 视听管理员只负责稿件准备与发布后管理，发布权限仅固定发布人员持有
+    perms: ['workbench', 'media.list', 'media.comments', 'feedback'],
   },
   {
     key: 'publisher',
@@ -303,6 +298,9 @@ export const MENU: MenuGroup[] = [
 export const EXTRA_ROUTES: MenuItem[] = [
   { title: '新增资讯', path: '/content/news/new', perm: 'content.news' },
   { title: '新增视听内容', path: '/media/new', perm: 'media.list' },
+  { title: '视听类目管理', path: '/media/categories', perm: 'media.list' },
+  // 兜底前缀匹配 /media/[id] 详情页，需排在具体路径之后
+  { title: '视听内容详情', path: '/media', perm: 'media.list' },
   { title: '发布视听内容', path: '/media/publish', perm: 'media.publish' },
   {
     title: '新建普通图文帖子',

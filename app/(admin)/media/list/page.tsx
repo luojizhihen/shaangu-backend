@@ -8,6 +8,7 @@ import {
   ArrowUpFromLine,
   AudioLines,
   FileVideo,
+  ListTree,
   MessageSquare,
   Pin,
   PinOff,
@@ -185,6 +186,13 @@ export default function MediaListPage() {
         title="视频与音频管理"
         actions={
           <>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/media/categories')}
+            >
+              <ListTree className="size-4" />
+              类目管理
+            </Button>
             <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
               <RefreshCcw className="size-4" />
               刷新

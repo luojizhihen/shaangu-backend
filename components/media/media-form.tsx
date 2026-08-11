@@ -239,7 +239,7 @@ export function MediaForm({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="grid gap-4">
         <Panel title="基本信息">
           <div className="grid gap-4">
@@ -421,7 +421,7 @@ export function MediaForm({
             onChange={(e) => pickCover(e.target.files)}
           />
           {values.cover ? (
-            <div className="relative aspect-video w-full overflow-hidden rounded-md border border-border">
+            <div className="relative aspect-video w-full max-w-80 overflow-hidden rounded-md border border-border">
               {/* 首帧截图与本地上传均为 blob/dataURL，使用原生 img 渲染 */}
               <img
                 src={values.cover || '/placeholder.svg'}
@@ -451,7 +451,7 @@ export function MediaForm({
               )}
             </div>
           ) : (
-            <div className="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground">
+            <div className="flex aspect-video w-full max-w-80 flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground">
               <ImagePlus className="size-6" />
               <span className="px-4 text-center text-[13px] leading-relaxed">
                 {isVideo ? '上传视频后自动截取第一帧' : '请手动上传封面图'}
