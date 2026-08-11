@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -22,15 +22,22 @@ import {
 import { breadcrumbFor } from '@/lib/nav'
 import { Button } from '@/components/ui/button'
 
-export default function NewMediaPage() {
+/**
+ * 新增视听内容表单。视频与「陕鼓之声」各有独立路由，
+ * 视听类型由路由决定并锁定，避免与菜单入口不一致。
+ */
+export function MediaCreateView({
+  kind,
+  backHref,
+  title,
+}: {
+  kind: MediaKind
+  backHref: string
+  title: string
+}) {
   const router = useRouter()
-  const params = useSearchParams()
   const { role, allow } = useApp()
   const canPublish = allow('media.publish')
-
-  // 由「视频管理」或「陕鼓之声」列表进入时锁定对应视听类型
-  const kind: MediaKind = params.get('kind') === '陕鼓之声' ? '陕鼓之声' : '视频'
-  const backHref = kind === '视频' ? '/media/videos' : '/media/audios'
 
   const [values, setValues] = React.useState<MediaFormValues>({
     ...EMPTY_MEDIA_FORM,
@@ -44,7 +51,7 @@ export default function NewMediaPage() {
 
   function validate() {
     if (!values.title.trim()) {
-      toast.error('请填写视听内容标题')
+      toast.error(`请填写${kind === '视频' ? '视频' : '音频'}标题`)
       return false
     }
     return true
@@ -73,21 +80,25 @@ export default function NewMediaPage() {
     }
     if (!values.cover) {
       toast.error(
-        values.kind === '视频'
+        kind === '视频'
           ? '发布前请重新截取视频第一帧作为封面'
           : '发布前请手动上传“陕鼓之声”封面',
       )
       return
     }
-    const item = createMediaItem({ ...values, author: role.person, dept: role.scope })
+    const item = createMediaItem({
+      ...values,
+      author: role.person,
+      dept: role.scope,
+    })
     setResults(publishMedia([item.id], role.person))
   }
 
   return (
     <>
       <PageHeader
-        breadcrumb={[...breadcrumbFor(backHref), `新增${kind === '视频' ? '视频' : '音频'}`]}
-        title={kind === '视频' ? '新增视频' : '新增“陕鼓之声”音频'}
+        breadcrumb={[...breadcrumbFor(backHref), title]}
+        title={title}
         actions={
           <>
             <Button variant="outline" onClick={() => router.push(backHref)}>

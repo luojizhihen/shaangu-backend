@@ -119,12 +119,15 @@ export default function MediaDetailPage() {
         <p className="text-[13px] text-muted-foreground">
           未找到该视听内容，可能已被删除。
         </p>
-        <Button className="mt-4" onClick={() => router.push('/media/list')}>
-          返回视听列表
+        <Button className="mt-4" onClick={() => router.push('/media/videos')}>
+          返回视频管理
         </Button>
       </Panel>
     )
   }
+
+  // 详情按内容自身的视听类型回到对应列表
+  const backHref = item.kind === '视频' ? '/media/videos' : '/media/audios'
 
   function patch(p: Partial<MediaFormValues>) {
     setValues((v) => (v ? { ...v, ...p } : v))
@@ -160,11 +163,11 @@ export default function MediaDetailPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={[...breadcrumbFor('/media/list'), '视听内容详情']}
+        breadcrumb={[...breadcrumbFor(backHref), '内容详情']}
         title={item.title}
         actions={
           <>
-            <Button variant="outline" onClick={() => router.push('/media/list')}>
+            <Button variant="outline" onClick={() => router.push(backHref)}>
               <ArrowLeft className="size-4" />
               返回列表
             </Button>
@@ -220,7 +223,7 @@ export default function MediaDetailPage() {
                 const res = removeMediaItems([id])
                 if (res[0]?.ok) {
                   toast.success('视听内容已删除')
-                  router.push('/media/list')
+                  router.push(backHref)
                   return
                 }
                 setResultAction('删除')

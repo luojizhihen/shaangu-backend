@@ -217,7 +217,8 @@ export const MENU: MenuGroup[] = [
     title: '视听管理',
     icon: PlayCircle,
     children: [
-      { title: '视频与音频管理', path: '/media/list', perm: 'media.list' },
+      { title: '视频管理', path: '/media/videos', perm: 'media.list' },
+      { title: '陕鼓之声', path: '/media/audios', perm: 'media.list' },
       { title: '视听评论管理', path: '/media/comments', perm: 'media.comments' },
     ],
   },
@@ -298,7 +299,6 @@ export const MENU: MenuGroup[] = [
 export const EXTRA_ROUTES: MenuItem[] = [
   { title: '新增资讯', path: '/content/news/new', perm: 'content.news' },
   { title: '新增视听内容', path: '/media/new', perm: 'media.list' },
-  { title: '视听类目管理', path: '/media/categories', perm: 'media.list' },
   // 兜底前缀匹配 /media/[id] 详情页，需排在具体路径之后
   { title: '视听内容详情', path: '/media', perm: 'media.list' },
   { title: '发布视听内容', path: '/media/publish', perm: 'media.publish' },

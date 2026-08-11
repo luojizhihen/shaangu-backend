@@ -8,7 +8,6 @@ import {
   ArrowUpFromLine,
   AudioLines,
   FileVideo,
-  ListTree,
   MessageSquare,
   Pin,
   PinOff,
@@ -21,7 +20,12 @@ import {
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
-import { NativeSelect, PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
+import {
+  NativeSelect,
+  PageHeader,
+  Panel,
+  StatusTag,
+} from '@/components/layout/page-frame'
 import {
   FilterBar,
   FilterField,
@@ -32,7 +36,6 @@ import {
 } from '@/components/content/table-shell'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import {
-  MEDIA_KINDS,
   MEDIA_STATUSES,
   PROCESS_STATES,
   processTone,
@@ -46,6 +49,7 @@ import {
   takeMediaOffline,
   useMedia,
   type BatchResult,
+  type MediaKind,
 } from '@/lib/media-store'
 import { breadcrumbFor } from '@/lib/nav'
 import { Button } from '@/components/ui/button'
@@ -74,22 +78,31 @@ const TOP_OPTIONS = ['全部', '是', '否']
 
 const EMPTY_QUERY = {
   title: '',
-  kind: '全部类型',
   status: '全部状态',
   process: '全部处理状态',
   author: '',
   top: '全部',
 }
 
-export default function MediaListPage() {
+/**
+ * 视频管理与「陕鼓之声」共用同一套列表逻辑，仅按视听类型隔离数据。
+ * 因此列表内不再提供视听类型筛选与类型列，避免与菜单入口重复。
+ */
+export function MediaListView({
+  kind,
+  title: pageTitle,
+}: {
+  kind: MediaKind
+  title: string
+}) {
   const pathname = usePathname()
   const router = useRouter()
   const { media } = useMedia()
   const { role, allow } = useApp()
   const canPublish = allow('media.publish')
+  const isVideo = kind === '视频'
 
   const [title, setTitle] = React.useState('')
-  const [kind, setKind] = React.useState('全部类型')
   const [status, setStatus] = React.useState('全部状态')
   const [process, setProcess] = React.useState('全部处理状态')
   const [author, setAuthor] = React.useState('')
@@ -107,16 +120,20 @@ export default function MediaListPage() {
     run: () => BatchResult[]
   } | null>(null)
 
+  const scoped = React.useMemo(
+    () => media.filter((m) => m.kind === kind),
+    [media, kind],
+  )
+
   const rows = React.useMemo(() => {
-    const filtered = media.filter((m) => {
+    const filtered = scoped.filter((m) => {
       const hitTitle = m.title.includes(query.title.trim())
-      const hitKind = query.kind === '全部类型' || m.kind === query.kind
       const hitStatus = query.status === '全部状态' || m.status === query.status
       const hitProcess =
         query.process === '全部处理状态' || m.process === query.process
       const hitAuthor = m.author.includes(query.author.trim())
       const hitTop = query.top === '全部' || (query.top === '是' ? m.top : !m.top)
-      return hitTitle && hitKind && hitStatus && hitProcess && hitAuthor && hitTop
+      return hitTitle && hitStatus && hitProcess && hitAuthor && hitTop
     })
     const dir = asc ? 1 : -1
     return [...filtered].sort((a, b) => {
@@ -126,19 +143,18 @@ export default function MediaListPage() {
       }
       return (a[sortKey] - b[sortKey]) * dir
     })
-  }, [media, query, sortKey, asc])
+  }, [scoped, query, sortKey, asc])
 
   const table = useTableState(rows)
-  const selectedRows = media.filter((m) => table.selected.includes(m.id))
+  const selectedRows = scoped.filter((m) => table.selected.includes(m.id))
 
   function search() {
-    setQuery({ title, kind, status, process, author, top })
+    setQuery({ title, status, process, author, top })
     table.setPage(1)
   }
 
   function reset() {
     setTitle('')
-    setKind('全部类型')
     setStatus('全部状态')
     setProcess('全部处理状态')
     setAuthor('')
@@ -157,7 +173,7 @@ export default function MediaListPage() {
 
   function ask(action: string, tip: string, run: () => BatchResult[]) {
     if (table.selected.length === 0) {
-      toast.error('请先在列表中勾选视听内容')
+      toast.error(`请先在列表中勾选${isVideo ? '视频' : '音频'}内容`)
       return
     }
     setConfirm({ action, tip, run })
@@ -172,34 +188,30 @@ export default function MediaListPage() {
     >
       {label}
       <ArrowDownUp
-        className={sortKey === k ? 'size-3 text-brand' : 'size-3 text-muted-foreground'}
+        className={
+          sortKey === k ? 'size-3 text-brand' : 'size-3 text-muted-foreground'
+        }
       />
     </button>
   )
 
-  const failedCount = media.filter((m) => m.process === '处理失败').length
+  const failedCount = scoped.filter((m) => m.process === '处理失败').length
+  const newHref = `/media/new?kind=${encodeURIComponent(kind)}`
 
   return (
     <>
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
-        title="视频与音频管理"
+        title={pageTitle}
         actions={
           <>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/media/categories')}
-            >
-              <ListTree className="size-4" />
-              类目管理
-            </Button>
             <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
               <RefreshCcw className="size-4" />
               刷新
             </Button>
-            <Button onClick={() => router.push('/media/new')}>
+            <Button onClick={() => router.push(newHref)}>
               <Plus className="size-4" />
-              新增视听内容
+              新增{isVideo ? '视频' : '音频'}
             </Button>
           </>
         }
@@ -214,14 +226,6 @@ export default function MediaListPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
             }}
-          />
-        </FilterField>
-        <FilterField label="视听类型">
-          <NativeSelect
-            aria-label="视听类型"
-            value={kind}
-            onChange={setKind}
-            options={['全部类型', ...MEDIA_KINDS]}
           />
         </FilterField>
         <FilterField label="内容状态">
@@ -259,7 +263,7 @@ export default function MediaListPage() {
 
       <Panel bodyClassName="p-0">
         <Toolbar>
-          <Button size="sm" onClick={() => router.push('/media/new')}>
+          <Button size="sm" onClick={() => router.push(newHref)}>
             <Plus className="size-3.5" />
             新增
           </Button>
@@ -306,7 +310,9 @@ export default function MediaListPage() {
             size="sm"
             variant="outline"
             onClick={() =>
-              ask('置顶', '仅已发布内容可置顶。', () => setMediaTop(table.selected, true))
+              ask('置顶', '仅已发布内容可置顶。', () =>
+                setMediaTop(table.selected, true),
+              )
             }
           >
             <Pin className="size-3.5" />
@@ -365,7 +371,6 @@ export default function MediaListPage() {
                 />
               </TableHead>
               <TableHead className="min-w-72">标题</TableHead>
-              <TableHead className="w-24">视听类型</TableHead>
               <TableHead className="w-20">时长</TableHead>
               <TableHead className="w-28">处理状态</TableHead>
               <TableHead className="w-24">内容状态</TableHead>
@@ -389,7 +394,10 @@ export default function MediaListPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={15} text="没有符合条件的视听内容" />
+              <TableEmpty
+                colSpan={14}
+                text={`没有符合条件的${isVideo ? '视频' : '音频'}内容`}
+              />
             )}
             {table.pageRows.map((m, i) => (
               <TableRow key={m.id}>
@@ -413,7 +421,7 @@ export default function MediaListPage() {
                           alt={`${m.title}封面`}
                           className="absolute inset-0 size-full object-cover"
                         />
-                      ) : m.kind === '视频' ? (
+                      ) : isVideo ? (
                         <FileVideo className="size-4" />
                       ) : (
                         <AudioLines className="size-4" />
@@ -428,11 +436,6 @@ export default function MediaListPage() {
                       {m.title}
                     </button>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <StatusTag tone={m.kind === '视频' ? 'info' : 'success'}>
-                    {m.kind}
-                  </StatusTag>
                 </TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {m.duration}
@@ -499,7 +502,9 @@ export default function MediaListPage() {
                       variant="ghost"
                       aria-label={`查看 ${m.title} 的评论`}
                       onClick={() =>
-                        router.push(`/media/comments?media=${encodeURIComponent(m.title)}`)
+                        router.push(
+                          `/media/comments?media=${encodeURIComponent(m.title)}`,
+                        )
                       }
                     >
                       <MessageSquare />

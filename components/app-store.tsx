@@ -7,6 +7,7 @@ import {
   type Role,
   type RoleKey,
   can,
+  routeMeta,
 } from '@/lib/nav'
 
 export type WorkTab = { path: string; title: string }
@@ -56,10 +57,12 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
       const raw = window.localStorage.getItem(KEY)
       if (raw) {
         const saved = JSON.parse(raw) as Partial<State>
+        // 丢弃指向已下线路由的历史页签，避免恢复后打开空白页
+        const valid = (saved.tabs ?? []).filter((t) => routeMeta(t.path))
         setState((s) => ({
           ...s,
           ...saved,
-          tabs: saved.tabs?.length ? saved.tabs : [HOME],
+          tabs: valid.length ? valid : [HOME],
           ready: true,
         }))
         return

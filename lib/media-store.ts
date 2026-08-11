@@ -63,17 +63,6 @@ export type MediaComment = {
   hidden: boolean
 }
 
-/** 视听类目（固定两类，不可新增或删除） */
-export type MediaCategory = {
-  id: string
-  name: MediaKind
-  /** 封面获取方式说明 */
-  coverRule: string
-  accept: string
-  sort: number
-  remark: string
-}
-
 /** 批量操作逐条结果，与内容管理共用展示组件 */
 export type BatchResult = {
   id: string
@@ -101,25 +90,6 @@ export function acceptOf(kind: MediaKind) {
 }
 
 /* ---------------- 种子数据 ---------------- */
-
-const SEED_CATEGORIES: MediaCategory[] = [
-  {
-    id: 'MCAT-01',
-    name: '视频',
-    coverRule: '自动截取视频第一帧',
-    accept: 'MP4 / MOV / AVI',
-    sort: 1,
-    remark: '集团视频栏目，上传后系统转码并自动截取第一帧作为封面',
-  },
-  {
-    id: 'MCAT-02',
-    name: '陕鼓之声',
-    coverRule: '手动上传封面图',
-    accept: 'MP3 / M4A / WAV',
-    sort: 2,
-    remark: '音频栏目“陕鼓之声”，封面需管理员手动上传，建议 16:9',
-  },
-]
 
 const SEED_MEDIA: MediaItem[] = [
   {
@@ -433,13 +403,11 @@ const SEED_COMMENTS: MediaComment[] = [
 /* ---------------- store ---------------- */
 
 type State = {
-  categories: MediaCategory[]
   media: MediaItem[]
   comments: MediaComment[]
 }
 
 let state: State = {
-  categories: SEED_CATEGORIES,
   media: SEED_MEDIA,
   comments: SEED_COMMENTS,
 }
@@ -507,30 +475,6 @@ export function statusTone(s: MediaStatus) {
   if (s === '已发布') return 'success' as const
   if (s === '草稿') return 'neutral' as const
   return 'warning' as const
-}
-
-/* ---------------- 类目动作（固定两类，仅可维护排序与备注） ---------------- */
-
-export function updateCategory(
-  id: string,
-  patch: Partial<Pick<MediaCategory, 'sort' | 'remark'>>,
-) {
-  commit({
-    categories: state.categories.map((c) =>
-      c.id === id ? { ...c, ...patch } : c,
-    ),
-  })
-}
-
-export function kindCount(kind: MediaKind) {
-  const rows = state.media.filter((m) => m.kind === kind)
-  return {
-    total: rows.length,
-    online: rows.filter((m) => m.status === '已发布').length,
-    draft: rows.filter((m) => m.status === '草稿').length,
-    offline: rows.filter((m) => m.status === '已下架').length,
-    plays: rows.reduce((sum, m) => sum + m.plays, 0),
-  }
 }
 
 /* ---------------- 视听内容动作 ---------------- */

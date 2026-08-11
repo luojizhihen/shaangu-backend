@@ -265,7 +265,7 @@ export function MediaForm({
                 <div className="flex items-center gap-2">
                   <StatusTag tone="info">{values.kind}</StatusTag>
                   <span className="text-xs text-muted-foreground">
-                    已入库内容不支持切换类型
+                    类型由所在菜单入口决定，不支持切换
                   </span>
                 </div>
               ) : (
