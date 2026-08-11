@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, Lock, RefreshCcw } from 'lucide-react'
+import { Download, RefreshCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -23,7 +23,6 @@ import { breadcrumbFor } from '@/lib/nav'
 import { downloadCsv } from '@/lib/export'
 import {
   logTypeTone,
-  maskPhone,
   signedAmount,
   usePoints,
   type PointsLogType,
@@ -43,7 +42,7 @@ const TYPES: PointsLogType[] = ['增加', '扣减', '年度清零']
 
 const EMPTY_QUERY = {
   nickname: '',
-  phone: '',
+  employee: '',
   type: '全部类型',
   start: '',
   end: '',
@@ -54,7 +53,7 @@ export default function PointsLogsPage() {
   const { logs } = usePoints()
 
   const [nickname, setNickname] = React.useState('')
-  const [phone, setPhone] = React.useState('')
+  const [employee, setEmployee] = React.useState('')
   const [type, setType] = React.useState('全部类型')
   const [start, setStart] = React.useState('')
   const [end, setEnd] = React.useState('')
@@ -64,12 +63,12 @@ export default function PointsLogsPage() {
     () =>
       logs.filter((l) => {
         const hitNickname = l.nickname.includes(query.nickname.trim())
-        const hitPhone = l.phone.includes(query.phone.trim())
+        const hitEmployee = l.employee.includes(query.employee.trim())
         const hitType = query.type === '全部类型' || l.type === query.type
         const day = l.at.slice(0, 10)
         const hitStart = !query.start || day >= query.start
         const hitEnd = !query.end || day <= query.end
-        return hitNickname && hitPhone && hitType && hitStart && hitEnd
+        return hitNickname && hitEmployee && hitType && hitStart && hitEnd
       }),
     [logs, query],
   )
@@ -77,13 +76,13 @@ export default function PointsLogsPage() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ nickname, phone, type, start, end })
+    setQuery({ nickname, employee, type, start, end })
     table.setPage(1)
   }
 
   function reset() {
     setNickname('')
-    setPhone('')
+    setEmployee('')
     setType('全部类型')
     setStart('')
     setEnd('')
@@ -96,72 +95,29 @@ export default function PointsLogsPage() {
         breadcrumb={breadcrumbFor(pathname)}
         title="积分日志"
         actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                downloadCsv(
-                  '积分日志',
-                  [
-                    '积分流水ID',
-                    '会员昵称',
-                    '会员手机号',
-                    '员工姓名',
-                    '所属部门',
-                    '积分数量',
-                    '类型',
-                    '积分变更来源',
-                    '变更后余额',
-                    '变更时间',
-                  ],
-                  rows.map((l) => [
-                    l.serial,
-                    l.nickname,
-                    maskPhone(l.phone),
-                    l.employee,
-                    l.dept,
-                    signedAmount(l),
-                    l.type,
-                    l.source,
-                    l.balance,
-                    l.at,
-                  ]),
-                )
-                toast.success(`已导出 ${rows.length} 条积分流水`)
-              }}
-            >
-              <Download className="size-4" />
-              导出
-            </Button>
-          </>
+          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
+            <RefreshCcw className="size-4" />
+            刷新
+          </Button>
         }
       />
 
-      <p className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-        <Lock className="mt-0.5 size-3.5 shrink-0" />
-        积分流水由系统按规则自动生成，管理端只读留痕：不提供人工增加、扣减、补发与回退，也不可编辑或删除历史积分。
-      </p>
-
       <FilterBar onSearch={search} onReset={reset}>
-        <FilterField label="会员昵称">
+        <FilterField label="昵称">
           <Input
             value={nickname}
-            placeholder="请输入会员昵称"
+            placeholder="请输入昵称"
             onChange={(e) => setNickname(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
             }}
           />
         </FilterField>
-        <FilterField label="会员手机号">
+        <FilterField label="员工姓名">
           <Input
-            value={phone}
-            placeholder="请输入会员手机号"
-            onChange={(e) => setPhone(e.target.value)}
+            value={employee}
+            placeholder="请输入员工姓名"
+            onChange={(e) => setEmployee(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
             }}
@@ -199,9 +155,41 @@ export default function PointsLogsPage() {
 
       <Panel bodyClassName="p-0">
         <Toolbar>
-          <span className="text-xs text-muted-foreground">
-            共 {logs.length} 条流水 · 当前筛选 {rows.length} 条
-          </span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              downloadCsv(
+                '积分日志',
+                [
+                  '积分流水ID',
+                  '昵称',
+                  '员工姓名',
+                  '所属部门',
+                  '积分数量',
+                  '类型',
+                  '积分变更来源',
+                  '变更后余额',
+                  '变更时间',
+                ],
+                rows.map((l) => [
+                  l.serial,
+                  l.nickname,
+                  l.employee,
+                  l.dept,
+                  signedAmount(l),
+                  l.type,
+                  l.source,
+                  l.balance,
+                  l.at,
+                ]),
+              )
+              toast.success(`已导出 ${rows.length} 条积分流水`)
+            }}
+          >
+            <Download className="size-3.5" />
+            导出
+          </Button>
         </Toolbar>
 
         <Table className="text-[13px]">
@@ -209,8 +197,7 @@ export default function PointsLogsPage() {
             <TableRow className="bg-muted/60">
               <TableHead className="w-14 pl-4">序号</TableHead>
               <TableHead className="w-24">积分流水ID</TableHead>
-              <TableHead className="w-28">会员昵称</TableHead>
-              <TableHead className="w-32">会员手机号</TableHead>
+              <TableHead className="w-28">昵称</TableHead>
               <TableHead className="w-24">员工姓名</TableHead>
               <TableHead className="w-20">积分数量</TableHead>
               <TableHead className="w-20">类型</TableHead>
@@ -221,7 +208,7 @@ export default function PointsLogsPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={10} text="没有符合条件的积分流水" />
+              <TableEmpty colSpan={9} text="没有符合条件的积分流水" />
             )}
             {table.pageRows.map((l, i) => (
               <TableRow key={l.id}>
@@ -233,9 +220,6 @@ export default function PointsLogsPage() {
                   <span className="block truncate" title={l.nickname}>
                     {l.nickname}
                   </span>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-muted-foreground">
-                  {maskPhone(l.phone)}
                 </TableCell>
                 <TableCell>
                   <span className="block truncate" title={`${l.employee} · ${l.dept}`}>
