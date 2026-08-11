@@ -22,7 +22,6 @@ import {
 } from '@/components/content/table-shell'
 import { breadcrumbFor } from '@/lib/nav'
 import {
-  DAILY_TOTAL_CAP,
   createRule,
   removeRules,
   toggleRules,
@@ -59,9 +58,8 @@ const EMPTY_DRAFT: RuleDraft = {
   sort: 1,
   name: '',
   code: '',
-  points: 1,
+  expression: '',
   dailyLimit: 10,
-  condition: '',
   remark: '',
   enabled: true,
 }
@@ -123,9 +121,8 @@ export default function PointsRulesPage() {
       sort: r.sort,
       name: r.name,
       code: r.code,
-      points: r.points,
+      expression: r.expression,
       dailyLimit: r.dailyLimit,
-      condition: r.condition,
       remark: r.remark,
       enabled: r.enabled,
     })
@@ -162,25 +159,12 @@ export default function PointsRulesPage() {
         breadcrumb={breadcrumbFor(pathname)}
         title="积分规则"
         actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={openCreate}>
-              <Plus className="size-4" />
-              新增
-            </Button>
-          </>
+          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
+            <RefreshCcw className="size-4" />
+            刷新
+          </Button>
         }
       />
-
-      <p className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-        <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
-        积分仅由会员行为按启用中的规则自动发放，单人每日合计上限{' '}
-        <span className="font-medium text-foreground">{DAILY_TOTAL_CAP} 分</span>
-        ，达到上限后当日不再计分。规则调整只影响此后产生的积分，不追溯已入账的历史流水。
-      </p>
 
       <FilterBar onSearch={search} onReset={reset}>
         <FilterField label="积分名称">
@@ -215,6 +199,10 @@ export default function PointsRulesPage() {
 
       <Panel bodyClassName="p-0">
         <Toolbar>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="size-3.5" />
+            新增
+          </Button>
           <Button
             size="sm"
             variant="outline"
@@ -258,9 +246,8 @@ export default function PointsRulesPage() {
               <TableHead className="w-14">排序</TableHead>
               <TableHead className="w-32">积分名称</TableHead>
               <TableHead className="w-28">积分编码</TableHead>
-              <TableHead className="w-20">单次积分</TableHead>
+              <TableHead className="w-24">规则表达式</TableHead>
               <TableHead className="w-24">单人每日上限</TableHead>
-              <TableHead>计分条件</TableHead>
               <TableHead>备注</TableHead>
               <TableHead className="w-20">启用状态</TableHead>
               <TableHead className="w-16 pr-4 text-center">操作</TableHead>
@@ -268,7 +255,7 @@ export default function PointsRulesPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={11} text="没有符合条件的积分规则" />
+              <TableEmpty colSpan={10} text="没有符合条件的积分规则" />
             )}
             {table.pageRows.map((r, i) => (
               <TableRow key={r.id}>
@@ -285,9 +272,7 @@ export default function PointsRulesPage() {
                 <TableCell className="text-muted-foreground">{r.sort}</TableCell>
                 <TableCell className="font-medium">{r.name}</TableCell>
                 <TableCell className="font-mono text-xs">{r.code}</TableCell>
-                <TableCell className="text-xs">
-                  <span className="font-mono">{r.points}</span> 分
-                </TableCell>
+                <TableCell className="font-mono text-xs">{r.expression}</TableCell>
                 <TableCell className="text-xs">
                   {r.dailyLimit < 0 ? (
                     '不限'
@@ -296,11 +281,6 @@ export default function PointsRulesPage() {
                       <span className="font-mono">{r.dailyLimit}</span> 分
                     </>
                   )}
-                </TableCell>
-                <TableCell>
-                  <span className="line-clamp-2 whitespace-normal text-muted-foreground">
-                    {r.condition}
-                  </span>
                 </TableCell>
                 <TableCell>
                   <span className="line-clamp-2 whitespace-normal text-muted-foreground">
@@ -375,16 +355,15 @@ export default function PointsRulesPage() {
 
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="grid gap-1.5">
-                <label htmlFor="rule-points" className="text-[13px]">
-                  <span className="text-destructive">*</span>单次积分
+                <label htmlFor="rule-expression" className="text-[13px]">
+                  <span className="text-destructive">*</span>规则表达式
                 </label>
                 <Input
-                  id="rule-points"
-                  type="number"
-                  min={1}
-                  value={draft.points}
+                  id="rule-expression"
+                  value={draft.expression}
+                  placeholder="如 1"
                   onChange={(e) =>
-                    setDraft((d) => ({ ...d, points: Number(e.target.value) }))
+                    setDraft((d) => ({ ...d, expression: e.target.value }))
                   }
                 />
               </div>
@@ -416,26 +395,16 @@ export default function PointsRulesPage() {
             </div>
 
             <div className="grid gap-1.5">
-              <label htmlFor="rule-condition" className="text-[13px]">
-                <span className="text-destructive">*</span>计分条件
-              </label>
-              <Input
-                id="rule-condition"
-                value={draft.condition}
-                placeholder="如 停留时长 ≥ 10 秒，且滑动至内容底部触发"
-                onChange={(e) => setDraft((d) => ({ ...d, condition: e.target.value }))}
-              />
-            </div>
-
-            <div className="grid gap-1.5">
               <label htmlFor="rule-remark" className="text-[13px]">
                 备注
               </label>
-              <Input
+              <textarea
                 id="rule-remark"
+                rows={4}
                 value={draft.remark}
-                placeholder="如 同一内容仅算 1 次"
+                placeholder="如 停留时长 ≥ 10 秒，滑动至底部触发，同一内容仅算 1 次"
                 onChange={(e) => setDraft((d) => ({ ...d, remark: e.target.value }))}
+                className="scroll-thin w-full rounded-md border border-input bg-surface px-3 py-2 text-[13px] leading-relaxed text-foreground focus:border-ring focus:outline-none"
               />
             </div>
 
@@ -452,11 +421,6 @@ export default function PointsRulesPage() {
                 </span>
               </div>
             </div>
-
-            <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-              单人每日上限填 -1 表示不限，且不得超过每日合计上限 {DAILY_TOTAL_CAP} 分。
-              规则只定义自动计分方式，保存后不会改写任何已入账积分。
-            </p>
 
             {issues.length > 0 && (
               <ul className="grid gap-1 rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2.5">

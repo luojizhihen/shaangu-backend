@@ -1,14 +1,12 @@
 'use client'
 
 /**
- * 积分模块（积分规则 / 积分日志 / 年度清零）原型数据与状态。
+ * 积分模块（积分规则 / 积分日志）原型数据与状态。
  *
  * 业务基线（务必保持）：
- * - 积分只能由会员行为按规则自动产生，或由兑换消耗、年度清零自动扣减。
+ * - 积分只能由会员行为按规则自动产生，或由兑换消耗、系统年度清零自动扣减。
  * - 管理端不提供人工增加、扣减、补发、回退积分的任何入口。
  * - 积分日志只读留痕：不可编辑、不可删除、不可回退历史积分。
- * - 年度清零只能配置「每年固定时点全员自动执行」，
- *   不提供立即清零、不提供选择部分用户清零、不提供修改已执行记录。
  * - 规则维护（新增 / 编辑 / 启用停用 / 删除）只影响此后产生的积分，不追溯历史流水。
  */
 
@@ -23,12 +21,11 @@ export type PointsRule = {
   name: string
   /** 积分编码，全局唯一 */
   code: string
-  /** 单次积分 */
-  points: number
+  /** 规则表达式，决定单次计分方式 */
+  expression: string
   /** 单人每日上限，-1 表示不限 */
   dailyLimit: number
-  /** 计分条件说明 */
-  condition: string
+  /** 备注，含计分条件与限制说明 */
   remark: string
   enabled: boolean
   updatedAt: string
@@ -56,38 +53,6 @@ export type PointsLog = {
   at: string
 }
 
-export type AnnualClearConfig = {
-  enabled: boolean
-  /** 清零周期固定为每年一次 */
-  cycle: string
-  /** 执行月份（1-12） */
-  month: number
-  /** 执行日期（1-31） */
-  day: number
-  /** 执行时刻 */
-  time: string
-  /** 生效范围固定为全部会员，不支持按用户选择 */
-  scope: string
-  /** 提前提醒天数 */
-  noticeDays: number
-  updatedAt: string
-  operator: string
-}
-
-export type AnnualClearRecord = {
-  id: string
-  /** 清零年度 */
-  year: number
-  executedAt: string
-  /** 涉及会员数 */
-  members: number
-  /** 清零积分总额 */
-  totalPoints: number
-  /** 执行方式恒为系统自动 */
-  mode: string
-  status: '已完成' | '执行中'
-}
-
 /* ---------------- 常量 ---------------- */
 
 /** 每日合计上限：所有行为当日累计不超过该值 */
@@ -95,10 +60,6 @@ export const DAILY_TOTAL_CAP = 50
 
 /** 规则不可为负分，单次积分上限用于表单校验 */
 export const MAX_POINTS_PER_TIME = 1000
-
-export const CLEAR_SCOPE = '全部会员'
-export const CLEAR_CYCLE = '每年一次'
-export const CLEAR_MODE = '系统自动执行'
 
 /* ---------------- 种子数据 ---------------- */
 
@@ -108,10 +69,10 @@ const SEED_RULES: PointsRule[] = [
     sort: 1,
     name: '阅读资讯/视频',
     code: 'HYJF_YDNR',
-    points: 1,
+    expression: '1',
     dailyLimit: 20,
-    condition: '停留时长 ≥ 10 秒，且滑动至内容底部触发',
-    remark: '滑动至底部触发，同一内容仅算 1 次',
+    remark:
+      '单次 1 分，停留时长 ≥ 10 秒，滑动至底部触发，同一内容仅算 1 次，每日上限 20 分',
     enabled: true,
     updatedAt: '2026-08-03 09:12:40',
     operator: '孙可',
@@ -121,10 +82,10 @@ const SEED_RULES: PointsRule[] = [
     sort: 2,
     name: '点赞',
     code: 'HYJF_DZ',
-    points: 1,
+    expression: '1',
     dailyLimit: 10,
-    condition: '对资讯、视听或帖子点赞成功',
-    remark: '同一内容仅算 1 次，取消点赞不退回积分',
+    remark:
+      '单次 1 分，点赞成功即计分，同一内容仅算 1 次，取消点赞不退回积分，每日上限 10 分',
     enabled: true,
     updatedAt: '2026-08-03 09:14:02',
     operator: '孙可',
@@ -134,10 +95,10 @@ const SEED_RULES: PointsRule[] = [
     sort: 3,
     name: '评论（审核通过）',
     code: 'HYJF_PL',
-    points: 2,
+    expression: '2',
     dailyLimit: 20,
-    condition: '评论字数 ≥ 10 字，且审核通过',
-    remark: '违规评论不计分，已计分评论被删除不扣回',
+    remark:
+      '单次 2 分，字数 ≥ 10 字且审核通过才计分，违规评论不计分，已计分评论被删除不扣回，每日上限 20 分',
     enabled: true,
     updatedAt: '2026-08-03 09:15:31',
     operator: '孙可',
@@ -303,62 +264,16 @@ const SEED_LOGS: PointsLog[] = [
   },
 ]
 
-const SEED_CLEAR_CONFIG: AnnualClearConfig = {
-  enabled: true,
-  cycle: CLEAR_CYCLE,
-  month: 12,
-  day: 31,
-  time: '23:59:59',
-  scope: CLEAR_SCOPE,
-  noticeDays: 15,
-  updatedAt: '2026-01-06 10:22:18',
-  operator: '孙可',
-}
-
-const SEED_CLEAR_RECORDS: AnnualClearRecord[] = [
-  {
-    id: 'AC-2025',
-    year: 2025,
-    executedAt: '2025-12-31 23:59:59',
-    members: 4186,
-    totalPoints: 512430,
-    mode: CLEAR_MODE,
-    status: '已完成',
-  },
-  {
-    id: 'AC-2024',
-    year: 2024,
-    executedAt: '2024-12-31 23:59:59',
-    members: 3902,
-    totalPoints: 446175,
-    mode: CLEAR_MODE,
-    status: '已完成',
-  },
-  {
-    id: 'AC-2023',
-    year: 2023,
-    executedAt: '2023-12-31 23:59:59',
-    members: 3574,
-    totalPoints: 391208,
-    mode: CLEAR_MODE,
-    status: '已完成',
-  },
-]
-
 /* ---------------- store ---------------- */
 
 type State = {
   rules: PointsRule[]
   logs: PointsLog[]
-  clearConfig: AnnualClearConfig
-  clearRecords: AnnualClearRecord[]
 }
 
 let state: State = {
   rules: SEED_RULES,
   logs: SEED_LOGS,
-  clearConfig: SEED_CLEAR_CONFIG,
-  clearRecords: SEED_CLEAR_RECORDS,
 }
 
 const listeners = new Set<() => void>()
@@ -415,24 +330,14 @@ export function signedAmount(log: PointsLog) {
   return `${log.type === '增加' ? '+' : '-'}${log.amount}`
 }
 
-/** 下一次自动清零时间，仅按配置推算展示 */
-export function nextClearAt(c: AnnualClearConfig, now = new Date()) {
-  const thisYear = new Date(
-    `${now.getFullYear()}-${pad(c.month)}-${pad(c.day)}T${c.time}`,
-  )
-  const year = thisYear.getTime() > now.getTime() ? now.getFullYear() : now.getFullYear() + 1
-  return `${year}-${pad(c.month)}-${pad(c.day)} ${c.time}`
-}
-
 /* ---------------- 规则维护 ---------------- */
 
 export type RuleDraft = {
   sort: number
   name: string
   code: string
-  points: number
+  expression: string
   dailyLimit: number
-  condition: string
   remark: string
   enabled: boolean
 }
@@ -453,19 +358,24 @@ export function validateRule(
   )
     issues.push('积分编码已存在，请更换')
 
-  if (!Number.isInteger(draft.points) || draft.points <= 0)
-    issues.push('单次积分需为大于 0 的整数')
-  else if (draft.points > MAX_POINTS_PER_TIME)
-    issues.push(`单次积分不得超过 ${MAX_POINTS_PER_TIME} 分`)
+  const expression = draft.expression.trim()
+  if (!expression) issues.push('规则表达式为必填项')
+
+  // 纯数字表达式即单次积分，需与每日上限一同校验
+  const perTime = /^\d+$/.test(expression) ? Number(expression) : null
+  if (perTime !== null) {
+    if (perTime <= 0) issues.push('规则表达式为单次积分时需大于 0')
+    else if (perTime > MAX_POINTS_PER_TIME)
+      issues.push(`单次积分不得超过 ${MAX_POINTS_PER_TIME} 分`)
+  }
 
   if (!Number.isInteger(draft.dailyLimit) || draft.dailyLimit === 0 || draft.dailyLimit < -1)
     issues.push('单人每日上限需为正整数，或填 -1 表示不限')
-  else if (draft.dailyLimit > 0 && draft.dailyLimit < draft.points)
+  else if (draft.dailyLimit > 0 && perTime !== null && draft.dailyLimit < perTime)
     issues.push('单人每日上限不得小于单次积分')
   else if (draft.dailyLimit > DAILY_TOTAL_CAP)
     issues.push(`单人每日上限不得超过每日合计上限 ${DAILY_TOTAL_CAP} 分`)
 
-  if (!draft.condition.trim()) issues.push('计分条件为必填项')
   return issues
 }
 
@@ -475,9 +385,8 @@ export function createRule(draft: RuleDraft, operator: string) {
     sort: draft.sort,
     name: draft.name.trim(),
     code: draft.code.trim(),
-    points: draft.points,
+    expression: draft.expression.trim(),
     dailyLimit: draft.dailyLimit,
-    condition: draft.condition.trim(),
     remark: draft.remark.trim(),
     enabled: draft.enabled,
     updatedAt: stamp(),
@@ -497,9 +406,8 @@ export function updateRule(id: string, draft: RuleDraft, operator: string) {
               sort: draft.sort,
               name: draft.name.trim(),
               code: draft.code.trim(),
-              points: draft.points,
+              expression: draft.expression.trim(),
               dailyLimit: draft.dailyLimit,
-              condition: draft.condition.trim(),
               remark: draft.remark.trim(),
               enabled: draft.enabled,
               updatedAt: stamp(),
@@ -528,41 +436,4 @@ export function removeRules(ids: string[]) {
   return hit
 }
 
-/* ---------------- 年度清零配置 ---------------- */
 
-export type ClearDraft = {
-  enabled: boolean
-  month: number
-  day: number
-  time: string
-  noticeDays: number
-}
-
-export function validateClearConfig(draft: ClearDraft): string[] {
-  const issues: string[] = []
-  if (!Number.isInteger(draft.month) || draft.month < 1 || draft.month > 12)
-    issues.push('清零月份需为 1-12 之间的整数')
-  if (!Number.isInteger(draft.day) || draft.day < 1 || draft.day > 31)
-    issues.push('清零日期需为 1-31 之间的整数')
-  if (!/^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(draft.time))
-    issues.push('执行时刻格式需为 HH:mm:ss')
-  if (!Number.isInteger(draft.noticeDays) || draft.noticeDays < 0 || draft.noticeDays > 90)
-    issues.push('提前提醒天数需为 0-90 之间的整数')
-  return issues
-}
-
-/** 仅保存下一次自动执行的配置，不触发任何即时清零 */
-export function saveClearConfig(draft: ClearDraft, operator: string) {
-  commit({
-    clearConfig: {
-      ...state.clearConfig,
-      enabled: draft.enabled,
-      month: draft.month,
-      day: draft.day,
-      time: draft.time,
-      noticeDays: draft.noticeDays,
-      updatedAt: stamp(),
-      operator,
-    },
-  })
-}
