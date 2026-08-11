@@ -71,17 +71,8 @@ export function MediaCreateView({
 
   function publish() {
     if (!validate()) return
-    if (isVideo) {
-      if (!values.fileName) {
-        toast.error('请先上传 MP4 视频文件')
-        return
-      }
-    } else if (values.process !== '处理完成') {
-      toast.error(
-        values.process === '处理失败'
-          ? '音频文件处理失败，请重试处理后再发布'
-          : '请先上传音频文件并等待处理完成',
-      )
+    if (!values.fileName) {
+      toast.error(`请先上传 ${isVideo ? 'MP4 视频' : 'MP3 音频'}文件`)
       return
     }
     if (!values.cover) {

@@ -5,8 +5,6 @@ import {
   AudioLines,
   FileVideo,
   ImagePlus,
-  Loader2,
-  RefreshCcw,
   Trash2,
   Upload,
 } from 'lucide-react'
@@ -16,10 +14,8 @@ import {
   acceptOf,
   formatDuration,
   formatSize,
-  processTone,
   MEDIA_KINDS,
   type MediaKind,
-  type ProcessState,
 } from '@/lib/media-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,8 +30,6 @@ export type MediaFormValues = {
   fileName: string
   fileSize: string
   duration: string
-  process: ProcessState
-  failReason: string
   sort: number
   top: boolean
 }
@@ -48,8 +42,6 @@ export const EMPTY_MEDIA_FORM: MediaFormValues = {
   fileName: '',
   fileSize: '—',
   duration: '—',
-  process: '待上传',
-  failReason: '',
   sort: 99,
   top: false,
 }
@@ -106,78 +98,44 @@ export function MediaForm({
   onChange,
   /** 已入库内容不允许切换视听类型，避免媒体文件与封面规则错配 */
   kindLocked = false,
-  /** 已入库内容的重试由服务端任务完成，由外部接管 */
-  onRetry,
 }: {
   values: MediaFormValues
   onChange: (patch: Partial<MediaFormValues>) => void
   kindLocked?: boolean
-  onRetry?: () => void
 }) {
   const mediaRef = React.useRef<HTMLInputElement>(null)
   const coverRef = React.useRef<HTMLInputElement>(null)
-  const fileRef = React.useRef<File | null>(null)
   const isVideo = values.kind === '视频'
 
-  async function process(file: File) {
-    // 视频为直传，无转码环节，仅读取时长
-    if (isVideo) {
-      if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') {
-        toast.error('视频仅支持 MP4 格式，请更换文件后重新上传')
-        return
-      }
-      onChange({
-        fileName: file.name,
-        fileSize: formatSize(file.size),
-        duration: '—',
-        process: '处理完成',
-        failReason: '',
-      })
-      try {
-        onChange({ duration: await probeDuration(file, '视频') })
-        toast.success('视频已上传')
-      } catch {
-        toast.success('视频已上传，未能读取时长')
-      }
+  // 视频与音频均为直传，无转码环节，上传后仅读取时长
+  async function upload(file: File) {
+    const label = isVideo ? '视频' : '音频'
+    const okExt = isVideo ? /\.mp4$/i : /\.mp3$/i
+    const okType = isVideo ? 'video/mp4' : 'audio/mpeg'
+    if (!okExt.test(file.name) && file.type !== okType) {
+      toast.error(
+        `${label}仅支持 ${isVideo ? 'MP4' : 'MP3'} 格式，请更换文件后重新上传`,
+      )
       return
     }
-
     onChange({
       fileName: file.name,
       fileSize: formatSize(file.size),
       duration: '—',
-      process: '处理中',
-      failReason: '',
     })
     try {
-      const duration = await probeDuration(file, '陕鼓之声')
-      onChange({ duration, process: '处理完成', failReason: '' })
-      toast.success('音频处理完成，请手动上传“陕鼓之声”封面')
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : '媒体处理服务未返回结果'
-      onChange({ process: '处理失败', failReason: reason })
-      toast.error('音频处理失败，可点击「重试处理」重新提交')
+      onChange({ duration: await probeDuration(file, values.kind) })
+      toast.success(`${label}已上传`)
+    } catch {
+      toast.success(`${label}已上传，未能读取时长`)
     }
   }
 
   function pickMedia(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
-    fileRef.current = file
-    void process(file)
+    void upload(file)
     if (mediaRef.current) mediaRef.current.value = ''
-  }
-
-  function retry() {
-    if (onRetry) {
-      onRetry()
-      return
-    }
-    if (!fileRef.current) {
-      toast.error('原始文件已失效，请重新上传媒体文件')
-      return
-    }
-    void process(fileRef.current)
   }
 
   function pickCover(files: FileList | null) {
@@ -209,19 +167,15 @@ export function MediaForm({
                 <NativeSelect
                   aria-label="视听类型"
                   value={values.kind}
-                  onChange={(v) => {
-                    const kind = v as MediaKind
-                    fileRef.current = null
+                  onChange={(v) =>
                     onChange({
-                      kind,
+                      kind: v as MediaKind,
                       cover: '',
                       fileName: '',
                       fileSize: '—',
                       duration: '—',
-                      process: '待上传',
-                      failReason: '',
                     })
-                  }}
+                  }
                   options={MEDIA_KINDS}
                   className="sm:w-60"
                 />
@@ -244,23 +198,14 @@ export function MediaForm({
         <Panel
           title={isVideo ? '视频文件' : '音频文件'}
           extra={
-            <div className="flex items-center gap-2">
-              {!isVideo && values.process === '处理失败' && (
-                <Button size="xs" variant="outline" onClick={retry}>
-                  <RefreshCcw className="size-3.5" />
-                  重试处理
-                </Button>
-              )}
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={values.process === '处理中'}
-                onClick={() => mediaRef.current?.click()}
-              >
-                <Upload className="size-3.5" />
-                {values.fileName ? '重新上传' : '上传文件'}
-              </Button>
-            </div>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => mediaRef.current?.click()}
+            >
+              <Upload className="size-3.5" />
+              {values.fileName ? '重新上传' : '上传文件'}
+            </Button>
           }
         >
           <input
@@ -271,37 +216,18 @@ export function MediaForm({
             onChange={(e) => pickMedia(e.target.files)}
           />
           {values.fileName ? (
-            <div className="grid gap-3">
-              <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2.5">
-                {isVideo ? (
-                  <FileVideo className="size-5 shrink-0 text-brand" />
-                ) : (
-                  <AudioLines className="size-5 shrink-0 text-brand" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px]">{values.fileName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {values.fileSize} · 时长 {values.duration}
-                  </p>
-                </div>
-                {!isVideo && (
-                  <StatusTag tone={processTone(values.process)}>
-                    {values.process === '处理中' ? (
-                      <span className="flex items-center gap-1">
-                        <Loader2 className="size-3 animate-spin" />
-                        处理中
-                      </span>
-                    ) : (
-                      values.process
-                    )}
-                  </StatusTag>
-                )}
-              </div>
-              {!isVideo && values.process === '处理失败' && (
-                <p className="rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-xs leading-relaxed text-destructive">
-                  处理失败：{values.failReason || '媒体处理服务未返回结果'}。请点击「重试处理」，或更换源文件后重新上传。
-                </p>
+            <div className="flex items-center gap-3 rounded-md border border-border px-3 py-2.5">
+              {isVideo ? (
+                <FileVideo className="size-5 shrink-0 text-brand" />
+              ) : (
+                <AudioLines className="size-5 shrink-0 text-brand" />
               )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px]">{values.fileName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {values.fileSize} · 时长 {values.duration}
+                </p>
+              </div>
             </div>
           ) : (
             <button
@@ -315,14 +241,9 @@ export function MediaForm({
                 <AudioLines className="size-6" />
               )}
               <span className="text-[13px]">
-                点击上传{isVideo ? '视频文件（仅支持 MP4）' : '音频文件（MP3 / M4A / WAV）'}
+                点击上传{isVideo ? '视频文件（仅支持 MP4）' : '音频文件（仅支持 MP3）'}
               </span>
             </button>
-          )}
-          {!isVideo && (
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-              上传后系统自动完成处理；处理完成才能发布或上架，处理失败可重试。
-            </p>
           )}
         </Panel>
       </div>

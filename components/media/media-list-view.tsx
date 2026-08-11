@@ -37,12 +37,9 @@ import {
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import {
   MEDIA_STATUSES,
-  PROCESS_STATES,
-  processTone,
   publishMedia,
   putMediaOnline,
   removeMediaItems,
-  retryProcess,
   setMediaSort,
   setMediaTop,
   statusTone,
@@ -79,7 +76,6 @@ const TOP_OPTIONS = ['全部', '是', '否']
 const EMPTY_QUERY = {
   title: '',
   status: '全部状态',
-  process: '全部处理状态',
   author: '',
   top: '全部',
 }
@@ -104,7 +100,6 @@ export function MediaListView({
 
   const [title, setTitle] = React.useState('')
   const [status, setStatus] = React.useState('全部状态')
-  const [process, setProcess] = React.useState('全部处理状态')
   const [author, setAuthor] = React.useState('')
   const [top, setTopFilter] = React.useState('全部')
   const [query, setQuery] = React.useState(EMPTY_QUERY)
@@ -129,11 +124,9 @@ export function MediaListView({
     const filtered = scoped.filter((m) => {
       const hitTitle = m.title.includes(query.title.trim())
       const hitStatus = query.status === '全部状态' || m.status === query.status
-      const hitProcess =
-        query.process === '全部处理状态' || m.process === query.process
       const hitAuthor = m.author.includes(query.author.trim())
       const hitTop = query.top === '全部' || (query.top === '是' ? m.top : !m.top)
-      return hitTitle && hitStatus && hitProcess && hitAuthor && hitTop
+      return hitTitle && hitStatus && hitAuthor && hitTop
     })
     const dir = asc ? 1 : -1
     return [...filtered].sort((a, b) => {
@@ -149,14 +142,13 @@ export function MediaListView({
   const selectedRows = scoped.filter((m) => table.selected.includes(m.id))
 
   function search() {
-    setQuery({ title, status, process, author, top })
+    setQuery({ title, status, author, top })
     table.setPage(1)
   }
 
   function reset() {
     setTitle('')
     setStatus('全部状态')
-    setProcess('全部处理状态')
     setAuthor('')
     setTopFilter('全部')
     setQuery(EMPTY_QUERY)
@@ -195,7 +187,6 @@ export function MediaListView({
     </button>
   )
 
-  const failedCount = scoped.filter((m) => m.process === '处理失败').length
   // 两个功能各有独立的新增路由，视听类型由路由决定
   const newHref = isVideo ? '/media/videos/new' : '/media/audios/new'
 
@@ -237,17 +228,6 @@ export function MediaListView({
             options={['全部状态', ...MEDIA_STATUSES]}
           />
         </FilterField>
-        {/* 视频无转码环节，不提供处理状态筛选 */}
-        {!isVideo && (
-          <FilterField label="处理状态">
-            <NativeSelect
-              aria-label="处理状态"
-              value={process}
-              onChange={setProcess}
-              options={['全部处理状态', ...PROCESS_STATES]}
-            />
-          </FilterField>
-        )}
         <FilterField label="创建人">
           <Input
             value={author}
@@ -277,9 +257,7 @@ export function MediaListView({
               onClick={() =>
                 ask(
                   '发布',
-                  isVideo
-                    ? '仅草稿可发布，需已上传视频且已有封面；发布后默认上架。请确认外部审批已完成。'
-                    : '仅草稿可发布，需音频处理完成且已有封面；发布后默认上架。请确认外部审批已完成。',
+                  `仅草稿可发布，需已上传${isVideo ? '视频' : '音频'}且已有封面；发布后默认上架。请确认外部审批已完成。`,
                   () => publishMedia(table.selected, role.person),
                 )
               }
@@ -336,20 +314,6 @@ export function MediaListView({
             <PinOff className="size-3.5" />
             取消置顶
           </Button>
-          {!isVideo && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                ask('重试处理', '仅处理失败的音频文件可重新提交处理。', () =>
-                  retryProcess(table.selected),
-                )
-              }
-            >
-              <RefreshCcw className="size-3.5" />
-              重试处理
-            </Button>
-          )}
           <Button
             size="sm"
             variant="outline"
@@ -362,11 +326,6 @@ export function MediaListView({
             <Trash2 className="size-3.5" />
             批量删除
           </Button>
-          {!isVideo && (
-            <span className="ml-auto text-xs text-muted-foreground">
-              处理失败 {failedCount} 条 · 已选 {table.selected.length} 条
-            </span>
-          )}
         </Toolbar>
 
         <Table className="text-[13px]">
@@ -382,7 +341,6 @@ export function MediaListView({
               </TableHead>
               <TableHead className="min-w-72">标题</TableHead>
               <TableHead className="w-20">时长</TableHead>
-              {!isVideo && <TableHead className="w-28">处理状态</TableHead>}
               <TableHead className="w-24">内容状态</TableHead>
               <TableHead className="w-24">是否置顶</TableHead>
               <TableHead className="w-24">创建人</TableHead>
@@ -405,7 +363,7 @@ export function MediaListView({
           <TableBody>
             {table.pageRows.length === 0 && (
               <TableEmpty
-                colSpan={isVideo ? 13 : 14}
+                colSpan={13}
                 text={`没有符合条件的${isVideo ? '视频' : '音频'}内容`}
               />
             )}
@@ -450,13 +408,6 @@ export function MediaListView({
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {m.duration}
                 </TableCell>
-                {!isVideo && (
-                  <TableCell>
-                    <StatusTag tone={processTone(m.process)}>
-                      {m.process}
-                    </StatusTag>
-                  </TableCell>
-                )}
                 <TableCell>
                   <StatusTag tone={statusTone(m.status)}>{m.status}</StatusTag>
                 </TableCell>
@@ -499,20 +450,6 @@ export function MediaListView({
                     >
                       <SquarePen />
                     </Button>
-                    {!isVideo && (
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label={`重试处理 ${m.title}`}
-                        disabled={m.process !== '处理失败'}
-                        onClick={() => {
-                          setResultAction('重试处理')
-                          setResults(retryProcess([m.id]))
-                        }}
-                      >
-                        <RefreshCcw />
-                      </Button>
-                    )}
                     <Button
                       size="icon-sm"
                       variant="ghost"
@@ -552,9 +489,6 @@ export function MediaListView({
             {selectedRows.map((m) => (
               <li key={m.id} className="flex items-center gap-2 px-3 py-1.5">
                 <span className="min-w-0 flex-1 truncate">{m.title}</span>
-                {!isVideo && (
-                  <StatusTag tone={processTone(m.process)}>{m.process}</StatusTag>
-                )}
                 <StatusTag tone={statusTone(m.status)}>{m.status}</StatusTag>
               </li>
             ))}

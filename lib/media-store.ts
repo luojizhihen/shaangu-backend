@@ -16,9 +16,6 @@ export type MediaKind = '视频' | '陕鼓之声'
 /** 内容状态仅三种：草稿、已发布、已下架。发布后默认上架，下架后可重新上架。 */
 export type MediaStatus = '草稿' | '已发布' | '已下架'
 
-/** 媒体文件转码处理状态，处理失败可重试 */
-export type ProcessState = '待上传' | '处理中' | '处理完成' | '处理失败'
-
 export type MediaItem = {
   id: string
   title: string
@@ -30,10 +27,6 @@ export type MediaItem = {
   fileSize: string
   /** 时长 mm:ss */
   duration: string
-  process: ProcessState
-  /** 处理失败原因 */
-  failReason: string
-  retryCount: number
   status: MediaStatus
   top: boolean
   sort: number
@@ -73,24 +66,12 @@ export type BatchResult = {
 
 export const MEDIA_KINDS: MediaKind[] = ['视频', '陕鼓之声']
 export const MEDIA_STATUSES: MediaStatus[] = ['草稿', '已发布', '已下架']
-export const PROCESS_STATES: ProcessState[] = [
-  '待上传',
-  '处理中',
-  '处理完成',
-  '处理失败',
-]
-
-/** 视频仅支持 MP4 上传，无转码环节 */
+/** 视频仅支持 MP4、音频仅支持 MP3；均为直传，无转码处理环节 */
 export const VIDEO_ACCEPT = 'video/mp4'
-export const AUDIO_ACCEPT = 'audio/mpeg,audio/mp4,audio/wav,audio/aac'
+export const AUDIO_ACCEPT = 'audio/mpeg'
 
 export function acceptOf(kind: MediaKind) {
   return kind === '视频' ? VIDEO_ACCEPT : AUDIO_ACCEPT
-}
-
-/** 视频直传直播放，不做转码；仅「陕鼓之声」保留媒体处理环节 */
-export function needsProcess(kind: MediaKind) {
-  return kind === '陕鼓之声'
 }
 
 /* ---------------- 种子数据 ---------------- */
@@ -106,9 +87,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'workshop-4k.mp4',
     fileSize: '486.2 MB',
     duration: '08:42',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '已发布',
     top: true,
     sort: 1,
@@ -131,9 +109,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'midyear-meeting.mp4',
     fileSize: '722.5 MB',
     duration: '15:20',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '已发布',
     top: false,
     sort: 2,
@@ -156,9 +131,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'voice-042.mp3',
     fileSize: '18.6 MB',
     duration: '12:05',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '已发布',
     top: false,
     sort: 3,
@@ -181,9 +153,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'service-72h.mp4',
     fileSize: '540.9 MB',
     duration: '10:16',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '已下架',
     top: false,
     sort: 4,
@@ -206,9 +175,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'voice-043.mp3',
     fileSize: '21.4 MB',
     duration: '14:38',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '草稿',
     top: false,
     sort: 5,
@@ -231,9 +197,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: 'skill-final.mp4',
     fileSize: '1.6 GB',
     duration: '11:24',
-    process: '处理完成',
-    failReason: '',
-    retryCount: 0,
     status: '草稿',
     top: false,
     sort: 6,
@@ -256,9 +219,6 @@ const SEED_MEDIA: MediaItem[] = [
     fileName: '',
     fileSize: '—',
     duration: '—',
-    process: '待上传',
-    failReason: '',
-    retryCount: 0,
     status: '草稿',
     top: false,
     sort: 7,
@@ -290,7 +250,7 @@ const SEED_COMMENTS: MediaComment[] = [
   {
     id: 'AVC-002',
     mediaId: 'AV-20260810-001',
-    mediaTitle: '智能制造车间：一台大型鼓风机的诞生',
+    mediaTitle: '智能制造车间：一台大型鼓风机���诞生',
     mediaKind: '视频',
     content: '画面清晰度很高，手机上播放也很流畅。',
     nickname: '山鹰',
@@ -461,13 +421,6 @@ export function formatDuration(seconds: number) {
   return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`
 }
 
-export function processTone(p: ProcessState) {
-  if (p === '处理完成') return 'success' as const
-  if (p === '处理中') return 'info' as const
-  if (p === '处理失败') return 'danger' as const
-  return 'neutral' as const
-}
-
 export function statusTone(s: MediaStatus) {
   if (s === '已发布') return 'success' as const
   if (s === '草稿') return 'neutral' as const
@@ -488,8 +441,6 @@ export type MediaDraftInput = {
   fileName: string
   fileSize: string
   duration: string
-  process: ProcessState
-  failReason: string
   sort: number
   top: boolean
   author: string
@@ -507,9 +458,6 @@ export function createMediaItem(input: MediaDraftInput): MediaItem {
     fileName: input.fileName,
     fileSize: input.fileSize || '—',
     duration: input.duration || '—',
-    process: input.process,
-    failReason: input.failReason,
-    retryCount: 0,
     status: '草稿',
     top: input.top,
     sort: input.sort,
@@ -535,16 +483,11 @@ export function updateMediaItem(id: string, patch: Partial<MediaItem>) {
   })
 }
 
-/** 发布前置校验：标题、媒体文件与封面；视频无转码环节，不校验处理状态 */
+/** 发布前置校验：标题、媒体文件与封面；无转码环节，不校验处理状态 */
 function publishBlocker(m: MediaItem): string {
   if (!m.title.trim()) return '标题为空'
   if (!m.fileName) {
     return m.kind === '视频' ? '尚未上传视频文件' : '尚未上传音频文件'
-  }
-  if (needsProcess(m.kind)) {
-    if (m.process === '待上传') return '尚未上传音频文件'
-    if (m.process === '处理中') return '音频文件仍在处理中，请稍后再发布'
-    if (m.process === '处理失败') return '音频文件处理失败，请重试处理后再发布'
   }
   if (!m.cover) return '缺少封面（请先手动上传封面图）'
   return ''
@@ -565,7 +508,7 @@ export function publishMedia(ids: string[], publisher: string): BatchResult[] {
         id: m.id,
         label: m.title,
         ok: false,
-        message: '已下架内容请使用「上架」重新上架',
+        message: '已下架内容请使用「上架」��新上架',
       })
       return m
     }
@@ -700,93 +643,6 @@ export function removeMediaItems(ids: string[]): BatchResult[] {
     media: keep,
     comments: state.comments.filter((c) => !removedIds.includes(c.mediaId)),
   })
-  return results
-}
-
-/* ---------------- 媒体文件上传与处理 ---------------- */
-
-/** 模拟转码：处理中 → 处理完成（第 1 次上传大文件会失败，便于演示重试） */
-function simulateProcess(id: string, shouldFail: boolean) {
-  window.setTimeout(() => {
-    const target = getMediaItem(id)
-    if (!target || target.process !== '处理中') return
-    if (shouldFail) {
-      updateMediaItem(id, {
-        process: '处理失败',
-        failReason: '转码任务超时，媒体处理服务未返回结果',
-      })
-      return
-    }
-    updateMediaItem(id, { process: '处理完成', failReason: '' })
-  }, 1600)
-}
-
-/** 已入库内容重新上传媒体文件 */
-export function attachMediaFile(
-  id: string,
-  file: { name: string; size: string; duration: string; shouldFail?: boolean },
-) {
-  updateMediaItem(id, {
-    fileName: file.name,
-    fileSize: file.size,
-    duration: file.duration,
-    process: '处理中',
-    failReason: '',
-  })
-  simulateProcess(id, Boolean(file.shouldFail))
-}
-
-/** 处理失败重试：重新提交处理任务，仅「陕鼓之声」有此环节 */
-export function retryProcess(ids: string[]): BatchResult[] {
-  const results: BatchResult[] = []
-  const media = state.media.map((m) => {
-    if (!ids.includes(m.id)) return m
-    if (!needsProcess(m.kind)) {
-      results.push({
-        id: m.id,
-        label: m.title,
-        ok: false,
-        message: '视频无转码处理环节，无需重试',
-      })
-      return m
-    }
-    if (m.process !== '处理失败') {
-      results.push({
-        id: m.id,
-        label: m.title,
-        ok: false,
-        message:
-          m.process === '待上传'
-            ? '尚未上传媒体文件，无需重试'
-            : `当前为「${m.process}」，无需重试`,
-      })
-      return m
-    }
-    results.push({
-      id: m.id,
-      label: m.title,
-      ok: true,
-      message: '已重新提交处理任务',
-    })
-    // 重试后走成功分支，封面仍需管理员手动上传
-    window.setTimeout(() => {
-      const target = getMediaItem(m.id)
-      if (!target || target.process !== '处理中') return
-      updateMediaItem(m.id, {
-        process: '处理完成',
-        failReason: '',
-        duration: target.duration === '—' ? '06:30' : target.duration,
-      })
-    }, 1600)
-    return {
-      ...m,
-      process: '处理中' as ProcessState,
-      failReason: '',
-      retryCount: m.retryCount + 1,
-      updatedAt: stamp(),
-    }
-  })
-  commit({ media })
   return results
 }
 

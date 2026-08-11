@@ -10,7 +10,6 @@ import {
   EyeOff,
   Pin,
   PinOff,
-  RefreshCcw,
   Save,
   Send,
   Trash2,
@@ -24,11 +23,9 @@ import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import { TableEmpty, useTableState } from '@/components/content/table-shell'
 import {
   getMediaItem,
-  processTone,
   publishMedia,
   putMediaOnline,
   removeMediaItems,
-  retryProcess,
   setMediaCommentHidden,
   setMediaTop,
   statusTone,
@@ -76,34 +73,10 @@ export default function MediaDetailPage() {
       fileName: target.fileName,
       fileSize: target.fileSize,
       duration: target.duration,
-      process: target.process,
-      failReason: target.failReason,
       sort: target.sort,
       top: target.top,
     })
   }, [id])
-
-  // 「陕鼓之声」处理任务在后台异步完成，处理结果回填到表单
-  const processSnapshot = item
-    ? `${item.process}|${item.duration}|${item.fileName}|${item.fileSize}|${item.failReason}|${item.cover}`
-    : ''
-  React.useEffect(() => {
-    const target = getMediaItem(id)
-    if (!target) return
-    setValues((v) =>
-      v
-        ? {
-            ...v,
-            fileName: target.fileName,
-            fileSize: target.fileSize,
-            duration: target.duration,
-            process: target.process,
-            failReason: target.failReason,
-            cover: target.cover || v.cover,
-          }
-        : v,
-    )
-  }, [id, processSnapshot])
 
   const rows = React.useMemo(
     () => comments.filter((c) => c.mediaId === id),
@@ -173,15 +146,6 @@ export default function MediaDetailPage() {
               <Save className="size-4" />
               保存
             </Button>
-            {item.process === '处理失败' && (
-              <Button
-                variant="outline"
-                onClick={() => run('重试处理', () => retryProcess([id]))}
-              >
-                <RefreshCcw className="size-4" />
-                重试处理
-              </Button>
-            )}
             {canPublish && item.status === '草稿' && (
               <Button onClick={() => run('发布', () => publishMedia([id], role.person))}>
                 <Send className="size-4" />
@@ -238,7 +202,6 @@ export default function MediaDetailPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3">
         <StatusTag tone={statusTone(item.status)}>{item.status}</StatusTag>
         <StatusTag tone={item.kind === '视频' ? 'info' : 'success'}>{item.kind}</StatusTag>
-        <StatusTag tone={processTone(item.process)}>{item.process}</StatusTag>
         {item.top && <StatusTag tone="danger">置顶</StatusTag>}
         <span className="text-xs text-muted-foreground">
           {item.id} · {item.dept} · {item.author} · 时长 {item.duration} · 发布时间{' '}
@@ -265,12 +228,7 @@ export default function MediaDetailPage() {
         </TabsList>
 
         <TabsContent value="content" className="pt-2">
-          <MediaForm
-            values={values}
-            onChange={patch}
-            kindLocked
-            onRetry={() => run('重试处理', () => retryProcess([id]))}
-          />
+          <MediaForm values={values} onChange={patch} kindLocked />
         </TabsContent>
 
         <TabsContent value="comments" className="pt-2">
