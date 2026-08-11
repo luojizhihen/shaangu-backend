@@ -219,11 +219,6 @@ export default function NewsListPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯管理"
-        description={
-          canPublish
-            ? '状态仅草稿、已发布、已下架。发布后默认上架，下架后可重新上架；当前角色具备发布权限。'
-            : '状态仅草稿、已发布、已下架。资讯管理员负责稿件准备与发布后管理，发布动作由固定发布人员执行。'
-        }
         actions={
           <>
             <Button variant="outline" onClick={() => toast.success('列表已刷新')}>

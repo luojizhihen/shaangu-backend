@@ -108,7 +108,6 @@ export default function CommentsPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯评论管理"
-        description="对资讯评论进行治理：隐藏后前台不可见、可随时恢复显示，删除后不可恢复。批量操作会逐条返回处理结果。"
         actions={
           <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
             <RefreshCcw className="size-4" />

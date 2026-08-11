@@ -48,7 +48,7 @@ const ATTACH_OPTIONS = ['全部', '支持附件', '仅正文']
 
 export default function CategoriesPage() {
   const pathname = usePathname()
-  const { categories, news } = useContent()
+  const { categories } = useContent()
   const { role } = useApp()
 
   const [keyword, setKeyword] = React.useState('')
@@ -109,7 +109,6 @@ export default function CategoriesPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯类目管理"
-        description="维护资讯类目。推荐、要闻、通知、奋斗者、学习、内刊为内置类目，不可删除；“通知”属于资讯类目，可维护正文与附件，与站内消息完全分开。"
         actions={
           <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
             <RefreshCcw className="size-4" />
@@ -167,8 +166,6 @@ export default function CategoriesPage() {
               </TableHead>
               <TableHead>分类名称</TableHead>
               <TableHead className="w-24">类目性质</TableHead>
-              <TableHead className="w-24">附件维护</TableHead>
-              <TableHead className="w-20">资讯数</TableHead>
               <TableHead className="w-24">创建人</TableHead>
               <TableHead className="w-44">创建日期</TableHead>
               <TableHead className="min-w-64">说明</TableHead>
@@ -177,10 +174,9 @@ export default function CategoriesPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={10} text="没有符合条件的资讯类目" />
+              <TableEmpty colSpan={8} text="没有符合条件的资讯类目" />
             )}
             {table.pageRows.map((c, i) => {
-              const count = news.filter((n) => n.category === c.name).length
               return (
                 <TableRow key={c.id}>
                   <TableCell className="pl-4 text-muted-foreground">
@@ -199,14 +195,6 @@ export default function CategoriesPage() {
                       {c.builtin ? '内置' : '自定义'}
                     </StatusTag>
                   </TableCell>
-                  <TableCell>
-                    {c.withAttachment ? (
-                      <StatusTag tone="success">正文 + 附件</StatusTag>
-                    ) : (
-                      <span className="text-muted-foreground">仅正文</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{count}</TableCell>
                   <TableCell>{c.owner}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {c.createdAt}

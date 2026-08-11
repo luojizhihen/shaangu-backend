@@ -19,7 +19,6 @@ export default function ModulePlaceholderPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title={meta?.title ?? '功能页面'}
-        description="本轮交付公共后台框架、登录页、工作台与 403 页面；该业务页面将在后续轮次按提示词逐模块生成。"
       />
       <Panel bodyClassName="p-8">
         <div className="flex items-start gap-4">

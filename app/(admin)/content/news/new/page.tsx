@@ -79,11 +79,6 @@ export default function NewNewsPage() {
       <PageHeader
         breadcrumb={[...breadcrumbFor('/content/news'), '新增资讯']}
         title="新增资讯"
-        description={
-          canPublish
-            ? '保存后为草稿状态；发布后默认上架，可在列表中下架或重新上架。'
-            : '保存后为草稿状态，发布动作由固定发布人员执行。'
-        }
         actions={
           <>
             <Button variant="outline" onClick={() => router.push('/content/news')}>

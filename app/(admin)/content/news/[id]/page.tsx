@@ -141,7 +141,6 @@ export default function NewsDetailPage() {
       <PageHeader
         breadcrumb={[...breadcrumbFor('/content/news'), '资讯详情']}
         title={item.title}
-        description={`${item.id} · ${item.dept} · ${item.author} · 创建 ${item.createdAt} · 最近更新 ${item.updatedAt}`}
         actions={
           <>
             <Button variant="outline" onClick={() => router.push('/content/news')}>
@@ -219,7 +218,7 @@ export default function NewsDetailPage() {
         <StatusTag tone="info">{item.category}</StatusTag>
         {item.top && <StatusTag tone="danger">置顶</StatusTag>}
         <span className="text-xs text-muted-foreground">
-          发布时间 {item.publishedAt || '—'}
+          {item.id} · {item.dept} · {item.author} · 发布时间 {item.publishedAt || '—'}
           {item.publisher ? ` · 发布人 ${item.publisher}` : ''}
         </span>
         <span className="ml-auto flex items-center gap-4 text-xs text-muted-foreground">
