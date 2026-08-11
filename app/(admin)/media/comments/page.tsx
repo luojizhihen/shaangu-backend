@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, RefreshCcw, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, RefreshCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { NativeSelect, PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
@@ -17,7 +17,6 @@ import {
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import {
   MEDIA_KINDS,
-  removeMediaComments,
   setMediaCommentHidden,
   useMedia,
   type BatchResult,
@@ -198,14 +197,6 @@ export default function MediaCommentsPage() {
           >
             <Eye className="size-3.5" />
             批量显示
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => batch('删除评论', () => removeMediaComments(table.selected))}
-          >
-            <Trash2 className="size-3.5" />
-            批量删除
           </Button>
           <span className="ml-auto text-xs text-muted-foreground">
             共 {comments.length} 条评论 · 已隐藏 {hiddenCount} 条 · 已选{' '}
