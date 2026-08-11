@@ -302,8 +302,6 @@ export const MENU: MenuGroup[] = [
 
 /** 菜单之外仍需权限校验的子路由（发布动作、编辑页等） */
 export const EXTRA_ROUTES: MenuItem[] = [
-  /** 运营数据与工作台合并为同一页面，此路由仅用于旧链接跳转 */
-  { title: '运营数据', path: '/analytics', perm: 'workbench' },
   { title: '新增资讯', path: '/content/news/new', perm: 'content.news' },
   { title: '发布资讯', path: '/content/news/publish', perm: 'content.publish' },
   { title: '新增视听内容', path: '/media/new', perm: 'media.list' },
