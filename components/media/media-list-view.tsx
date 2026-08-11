@@ -196,7 +196,8 @@ export function MediaListView({
   )
 
   const failedCount = scoped.filter((m) => m.process === '处理失败').length
-  const newHref = `/media/new?kind=${encodeURIComponent(kind)}`
+  // 两个功能各有独立的新增路由，视听类型由路由决定
+  const newHref = isVideo ? '/media/videos/new' : '/media/audios/new'
 
   return (
     <>

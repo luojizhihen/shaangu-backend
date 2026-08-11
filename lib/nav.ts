@@ -298,10 +298,10 @@ export const MENU: MenuGroup[] = [
 /** 菜单之外仍需权限校验的子路由（发布动作、编辑页等） */
 export const EXTRA_ROUTES: MenuItem[] = [
   { title: '新增资讯', path: '/content/news/new', perm: 'content.news' },
-  { title: '新增视听内容', path: '/media/new', perm: 'media.list' },
+  { title: '新增视频', path: '/media/videos/new', perm: 'media.list' },
+  { title: '新增音频', path: '/media/audios/new', perm: 'media.list' },
   // 兜底前缀匹配 /media/[id] 详情页，需排在具体路径之后
   { title: '视听内容详情', path: '/media', perm: 'media.list' },
-  { title: '发布视听内容', path: '/media/publish', perm: 'media.publish' },
   {
     title: '新建普通图文帖子',
     path: '/forum/posts/new',

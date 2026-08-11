@@ -35,7 +35,8 @@ type Store = State & {
 }
 
 const HOME: WorkTab = { path: '/workbench', title: '工作台' }
-const KEY = 'shaangu-admin-state-v1'
+// v2：视听管理拆分为「视频管理」「陕鼓之声」，废弃指向旧路由的历史页签
+const KEY = 'shaangu-admin-state-v2'
 
 const initial: State = {
   ready: false,
