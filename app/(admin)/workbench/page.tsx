@@ -4,24 +4,16 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FilePlus2,
   Inbox,
   RotateCw,
-  Search,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
-import {
-  Field,
-  NativeSelect,
-  PageHeader,
-  Panel,
-  StatusTag,
-} from '@/components/layout/page-frame'
+import { PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
 import {
   DeptPointsChart,
   PointsChart,
@@ -39,7 +31,6 @@ import {
 } from '@/lib/mock'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import {
   Sheet,
   SheetContent,
@@ -56,57 +47,23 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const TYPES = [
-  '全部类型',
-  '待发布草稿',
-  '同步异常',
-  '待回复反馈',
-  '待领取订单',
-  '内容下架异常',
-]
-const LEVELS = ['全部优先级', '高', '中', '低']
-const RANGES = ['近 7 天', '近 30 天', '本季度']
 const PAGE_SIZE = 5
 
 export default function WorkbenchPage() {
   const router = useRouter()
   const { role, allow } = useApp()
 
-  const [filters, setFilters] = usePersistentState('shaangu-workbench-filters', {
-    type: '全部类型',
-    level: '全部优先级',
-    owner: '',
-    range: '近 7 天',
-    more: false,
-    dept: '全部部门',
-    page: 1,
-  })
+  const [currentPage, setCurrentPage] = usePersistentState(
+    'shaangu-workbench-page',
+    1,
+  )
   const [selected, setSelected] = React.useState<string[]>([])
   const [detail, setDetail] = React.useState<Todo | null>(null)
 
-  const patch = (v: Partial<typeof filters>) =>
-    setFilters((f) => ({ ...f, ...v }))
-
-  const rows = React.useMemo(
-    () =>
-      TODOS.filter(
-        (t) =>
-          (filters.type === '全部类型' || t.type === filters.type) &&
-          (filters.level === '全部优先级' || t.level === filters.level) &&
-          (!filters.owner.trim() || t.owner.includes(filters.owner.trim())) &&
-          (filters.dept === '全部部门' || t.dept === filters.dept),
-      ),
-    [filters.type, filters.level, filters.owner, filters.dept],
-  )
-
+  const rows = TODOS
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const page = Math.min(filters.page, totalPages)
+  const page = Math.min(currentPage, totalPages)
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  const summary = TYPES.slice(1).map((type) => ({
-    type,
-    count: TODOS.filter((t) => t.type === type).length,
-  }))
 
   function goto(path: string) {
     router.push(path)
@@ -117,7 +74,7 @@ export default function WorkbenchPage() {
       <PageHeader
         breadcrumb={['工作台']}
         title="工作台"
-        description={`运营待办优先展示，指标与图表可下钻到对应列表并保留筛选条件。数据更新时间 ${DATA_UPDATED_AT}｜当前数据权限范围：${role.scope}。`}
+        description={`运营待办优先展示，指标与图表可下钻到对应业务列表。数据更新时间 ${DATA_UPDATED_AT}｜当前数据权限范围：${role.scope}。`}
         actions={
           <>
             {allow('content.news') && (
@@ -133,109 +90,6 @@ export default function WorkbenchPage() {
           </>
         }
       />
-
-      {/* 待办概览 */}
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-        {summary.map((s) => (
-          <button
-            key={s.type}
-            type="button"
-            onClick={() => patch({ type: s.type, page: 1 })}
-            className={`flex items-center justify-between rounded-lg border bg-surface px-3.5 py-3 text-left transition-colors ${
-              filters.type === s.type
-                ? 'border-brand'
-                : 'border-border hover:border-brand/40'
-            }`}
-          >
-            <span className="text-[13px] text-muted-foreground">{s.type}</span>
-            <span className="text-xl font-medium text-brand">{s.count}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* 筛选区 */}
-      <Panel className="mb-4" bodyClassName="p-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Field label="待办类型">
-            <NativeSelect
-              aria-label="待办类型"
-              value={filters.type}
-              onChange={(v) => patch({ type: v, page: 1 })}
-              options={TYPES}
-            />
-          </Field>
-          <Field label="优先级">
-            <NativeSelect
-              aria-label="优先级"
-              value={filters.level}
-              onChange={(v) => patch({ level: v, page: 1 })}
-              options={LEVELS}
-            />
-          </Field>
-          <Field label="责任人">
-            <Input
-              value={filters.owner}
-              onChange={(e) => patch({ owner: e.target.value, page: 1 })}
-              placeholder="请输入责任人姓名"
-              className="h-8"
-            />
-          </Field>
-          <Field label="时间范围">
-            <NativeSelect
-              aria-label="时间范围"
-              value={filters.range}
-              onChange={(v) => patch({ range: v })}
-              options={RANGES}
-            />
-          </Field>
-
-          {filters.more && (
-            <Field label="所属部门">
-              <NativeSelect
-                aria-label="所属部门"
-                value={filters.dept}
-                onChange={(v) => patch({ dept: v, page: 1 })}
-                options={[
-                  '全部部门',
-                  ...Array.from(new Set(TODOS.map((t) => t.dept))),
-                ]}
-              />
-            </Field>
-          )}
-        </div>
-
-        <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
-          <Button onClick={() => toast.success('已按当前条件检索待办')}>
-            <Search className="size-4" />
-            搜索
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setFilters({
-                type: '全部类型',
-                level: '全部优先级',
-                owner: '',
-                range: '近 7 天',
-                more: filters.more,
-                dept: '全部部门',
-                page: 1,
-              })
-            }
-          >
-            重置
-          </Button>
-          <Button variant="ghost" onClick={() => patch({ more: !filters.more })}>
-            {filters.more ? '收起筛选' : '展开更多'}
-            <ChevronDown
-              className={`size-4 transition-transform ${filters.more ? 'rotate-180' : ''}`}
-            />
-          </Button>
-          <span className="ml-auto text-xs text-muted-foreground">
-            共 {rows.length} 条待办
-          </span>
-        </div>
-      </Panel>
 
       {/* 表格区 */}
       <Panel
@@ -298,22 +152,7 @@ export default function WorkbenchPage() {
                 <TableCell colSpan={8} className="h-40">
                   <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
                     <Inbox className="size-6" />
-                    <p className="text-[13px]">当前筛选条件下没有待办事项</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        patch({
-                          type: '全部类型',
-                          level: '全部优先级',
-                          owner: '',
-                          dept: '全部部门',
-                          page: 1,
-                        })
-                      }
-                    >
-                      清空筛选条件
-                    </Button>
+                    <p className="text-[13px]">暂无待办事项</p>
                   </div>
                 </TableCell>
               </TableRow>
@@ -402,7 +241,7 @@ export default function WorkbenchPage() {
               variant="outline"
               disabled={page <= 1}
               aria-label="上一页"
-              onClick={() => patch({ page: page - 1 })}
+              onClick={() => setCurrentPage(page - 1)}
             >
               <ChevronLeft className="size-4" />
             </Button>
@@ -411,7 +250,7 @@ export default function WorkbenchPage() {
                 key={i}
                 size="sm"
                 variant={page === i + 1 ? 'default' : 'outline'}
-                onClick={() => patch({ page: i + 1 })}
+                onClick={() => setCurrentPage(i + 1)}
               >
                 {i + 1}
               </Button>
@@ -421,7 +260,7 @@ export default function WorkbenchPage() {
               variant="outline"
               disabled={page >= totalPages}
               aria-label="下一页"
-              onClick={() => patch({ page: page + 1 })}
+              onClick={() => setCurrentPage(page + 1)}
             >
               <ChevronRight className="size-4" />
             </Button>

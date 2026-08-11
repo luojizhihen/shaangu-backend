@@ -2,19 +2,12 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Activity,
-  Bell,
-  LogOut,
-  Search,
-  UserCog,
-  UserRound,
-} from 'lucide-react'
+import { Bell, LogOut, UserCog, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
-import { ALL_ROUTES, ROLES, can } from '@/lib/nav'
-import { NOTICES, PLATFORM_NAME } from '@/lib/mock'
+import { ROLES } from '@/lib/nav'
+import { NOTICES } from '@/lib/mock'
 import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
@@ -28,68 +21,10 @@ import {
 export function AppTopbar() {
   const router = useRouter()
   const { role, roleKey, setRoleKey, signOut } = useApp()
-  const [keyword, setKeyword] = React.useState('')
-
-  const results = keyword.trim()
-    ? ALL_ROUTES.filter(
-        (r) => can(role, r.perm) && r.title.includes(keyword.trim()),
-      ).slice(0, 6)
-    : []
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 bg-brand px-4 text-white">
-      <h1 className="mr-2 text-[17px] font-medium tracking-wide whitespace-nowrap">
-        {PLATFORM_NAME}
-      </h1>
-
-      {/* 全局搜索：仅在当前角色有权限的功能内检索 */}
-      <div className="relative w-64">
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-white/70" />
-        <input
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="搜索功能、菜单"
-          aria-label="全局搜索"
-          className="h-8 w-full rounded-md border border-white/25 bg-white/10 pr-2 pl-8 text-[13px] text-white placeholder:text-white/60 focus:border-white/60 focus:outline-none"
-        />
-        {results.length > 0 && (
-          <ul className="absolute top-9 left-0 z-50 w-full overflow-hidden rounded-md border border-border bg-popover py-1 text-foreground shadow-md">
-            {results.map((r) => (
-              <li key={r.path}>
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between px-3 py-1.5 text-[13px] hover:bg-accent"
-                  onClick={() => {
-                    setKeyword('')
-                    router.push(r.path)
-                  }}
-                >
-                  <span>{r.title}</span>
-                  <span className="text-xs text-muted-foreground">{r.path}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {keyword.trim() && results.length === 0 && (
-          <div className="absolute top-9 left-0 z-50 w-full rounded-md border border-border bg-popover px-3 py-2 text-[13px] text-muted-foreground shadow-md">
-            当前角色无匹配的可访问功能
-          </div>
-        )}
-      </div>
-
       <div className="flex-1" />
-
-      {/* 任务状态 */}
-      <button
-        type="button"
-        onClick={() => router.push('/logs/system')}
-        className="flex h-8 items-center gap-2 rounded-md border border-white/25 px-2.5 text-xs hover:bg-white/10"
-      >
-        <Activity className="size-4" />
-        任务运行中 2
-        <span className="airflow-line h-[2px] w-6 rounded-full" />
-      </button>
 
       {/* 消息 */}
       <DropdownMenu>

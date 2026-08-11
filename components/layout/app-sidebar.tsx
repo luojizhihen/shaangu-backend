@@ -1,12 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ChevronDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
 import { useApp } from '@/components/app-store'
+import { PLATFORM_NAME } from '@/lib/mock'
 import { menuForRole } from '@/lib/nav'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -41,21 +41,22 @@ export function AppSidebar() {
         collapsed ? 'w-16' : 'w-56',
       )}
     >
-      {/* 官方 Logo 置于白色底板，避免在深蓝背景上直接使用蓝色 Logo */}
-      <div className="flex h-14 items-center gap-2 border-b border-white/10 px-3">
+      {/* 平台名称作为导航区标识 */}
+      <div className="flex h-14 items-center border-b border-white/10 px-3">
         <Link
           href="/workbench"
-          className="flex h-9 items-center justify-center rounded-md bg-white px-2"
-          aria-label="陕鼓融媒管理平台"
+          className="flex h-9 w-full items-center rounded-md text-white"
+          aria-label={PLATFORM_NAME}
         >
-          <Image
-            src="/shaangu-logo.png"
-            alt="陕鼓集团 ShaanGu 官方标识"
-            width={collapsed ? 40 : 132}
-            height={22}
-            className="h-[18px] w-auto object-contain"
-            priority
-          />
+          {collapsed ? (
+            <span className="w-full text-center text-sm font-medium tracking-wide">
+              融媒
+            </span>
+          ) : (
+            <span className="text-[15px] font-medium tracking-wide whitespace-nowrap">
+              {PLATFORM_NAME}
+            </span>
+          )}
         </Link>
       </div>
 
