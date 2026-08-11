@@ -313,6 +313,8 @@ export const EXTRA_ROUTES: MenuItem[] = [
   { title: '官方内容', path: '/forum/official', perm: 'forum.posts' },
   { title: '论坛治理日志', path: '/forum/governance-logs', perm: 'forum.posts' },
   { title: '新增商品', path: '/mall/products/new', perm: 'mall.products' },
+  // 兜底前缀匹配 /mall/products/[id] 详情页，需排在具体路径之后
+  { title: '商品详情', path: '/mall/products', perm: 'mall.products' },
 ]
 
 /** 一级直达菜单（无下级菜单）也纳入路由表 */
