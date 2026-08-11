@@ -116,6 +116,22 @@ export const READ_TREND = [
   { date: '08-11', 资讯阅读: 9204, 视听播放: 3274, 互动: 2864 },
 ]
 
+/** 近 30 天趋势：按日生成的稳定模拟数据（无随机，避免服务端与客户端不一致） */
+export const READ_TREND_30 = Array.from({ length: 30 }, (_, i) => {
+  const day = new Date(2026, 6, 13)
+  day.setDate(day.getDate() + i)
+  const date = `${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+  const wave = Math.sin(i / 3.2)
+  const weekend = day.getDay() === 0 || day.getDay() === 6
+  const factor = weekend ? 0.72 : 1
+  return {
+    date,
+    资讯阅读: Math.round((8200 + wave * 900 + i * 42) * factor),
+    视听播放: Math.round((2500 + wave * 320 + i * 26) * factor),
+    互动: Math.round((2100 + wave * 260 + i * 24) * factor),
+  }
+})
+
 export const POINTS_TREND = [
   { month: '3月', 获取: 268000, 消耗: 121000 },
   { month: '4月', 获取: 291000, 消耗: 143000 },
@@ -131,6 +147,30 @@ export const DEPT_POINTS = [
   { dept: '智能装备', 积分: 68400 },
   { dept: '党群工作部', 积分: 51200 },
   { dept: '信息管理部', 积分: 43900 },
+]
+
+/** 部门员工积分明细：用于部门积分排行的下钻与导出 */
+export type DeptPointMember = {
+  dept: string
+  name: string
+  employeeNo: string
+  获取: number
+  消耗: number
+  余额: number
+}
+
+export const DEPT_POINT_MEMBERS: DeptPointMember[] = [
+  { dept: '透平机械', name: '王建国', employeeNo: 'SG10231', 获取: 4820, 消耗: 1600, 余额: 3220 },
+  { dept: '透平机械', name: '李慧敏', employeeNo: 'SG10287', 获取: 4310, 消耗: 900, 余额: 3410 },
+  { dept: '透平机械', name: '赵鹏', employeeNo: 'SG10344', 获取: 3760, 消耗: 2100, 余额: 1660 },
+  { dept: '能源工程', name: '陈晓东', employeeNo: 'SG20115', 获取: 4180, 消耗: 1200, 余额: 2980 },
+  { dept: '能源工程', name: '周芸', employeeNo: 'SG20178', 获取: 3520, 消耗: 800, 余额: 2720 },
+  { dept: '智能装备', name: '刘志强', employeeNo: 'SG30142', 获取: 3980, 消耗: 1750, 余额: 2230 },
+  { dept: '智能装备', name: '孙悦', employeeNo: 'SG30196', 获取: 3240, 消耗: 600, 余额: 2640 },
+  { dept: '党群工作部', name: '郑文博', employeeNo: 'SG40108', 获取: 3610, 消耗: 1400, 余额: 2210 },
+  { dept: '党群工作部', name: '马丽娜', employeeNo: 'SG40163', 获取: 2870, 消耗: 500, 余额: 2370 },
+  { dept: '信息管理部', name: '杨帆', employeeNo: 'SG50127', 获取: 3150, 消耗: 1950, 余额: 1200 },
+  { dept: '信息管理部', name: '何静', employeeNo: 'SG50184', 获取: 2640, 消耗: 700, 余额: 1940 },
 ]
 
 export const HOT_NEWS = [

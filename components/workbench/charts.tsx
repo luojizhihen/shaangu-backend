@@ -13,7 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 
-import { DEPT_POINTS, POINTS_TREND, READ_TREND } from '@/lib/mock'
+import { DEPT_POINTS, POINTS_TREND, READ_TREND, READ_TREND_30 } from '@/lib/mock'
 
 const axis = {
   stroke: '#5F6B78',
@@ -26,12 +26,23 @@ const tooltipStyle = {
   fontSize: 12,
 }
 
-export function ReadTrendChart() {
+export function ReadTrendChart({
+  range = '7d',
+}: {
+  range?: '7d' | '30d'
+}) {
+  const data = range === '30d' ? READ_TREND_30 : READ_TREND
   return (
     <ResponsiveContainer width="100%" height={240}>
-      <LineChart data={READ_TREND} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
         <CartesianGrid stroke="#E7EDF3" vertical={false} />
-        <XAxis dataKey="date" tickLine={false} axisLine={false} tick={axis} />
+        <XAxis
+          dataKey="date"
+          tickLine={false}
+          axisLine={false}
+          tick={axis}
+          interval={range === '30d' ? 3 : 0}
+        />
         <YAxis tickLine={false} axisLine={false} tick={axis} width={52} />
         <Tooltip contentStyle={tooltipStyle} />
         <Legend iconType="plainline" wrapperStyle={{ fontSize: 12 }} />
@@ -83,11 +94,22 @@ export function PointsChart() {
   )
 }
 
-export function DeptPointsChart() {
+export function DeptPointsChart({
+  data = DEPT_POINTS,
+}: {
+  data?: { dept: string; 积分: number }[]
+}) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-[240px] items-center justify-center text-[13px] text-muted-foreground">
+        当前筛选条件下暂无部门积分数据
+      </div>
+    )
+  }
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart
-        data={DEPT_POINTS}
+        data={data}
         layout="vertical"
         margin={{ top: 4, right: 16, left: 8, bottom: 0 }}
       >

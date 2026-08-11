@@ -1,19 +1,87 @@
 'use client'
 
+import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Download } from 'lucide-react'
+import { toast } from 'sonner'
 
-import { Panel, StatusTag } from '@/components/layout/page-frame'
+import { NativeSelect, Panel, StatusTag } from '@/components/layout/page-frame'
+import { DeptPointsChart, ReadTrendChart } from '@/components/workbench/charts'
 import {
-  DeptPointsChart,
-  PointsChart,
-  ReadTrendChart,
-} from '@/components/workbench/charts'
-import { HOT_MEDIA, HOT_NEWS, KPIS, SYSTEM_STATUS } from '@/lib/mock'
+  DEPT_POINTS,
+  DEPT_POINT_MEMBERS,
+  HOT_MEDIA,
+  HOT_NEWS,
+  KPIS,
+  SYSTEM_STATUS,
+} from '@/lib/mock'
+import { downloadCsv } from '@/lib/export'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+
+const TREND_RANGES = [
+  { key: '7d' as const, label: '近 7 天' },
+  { key: '30d' as const, label: '近 30 天' },
+]
+
+const DEPT_OPTIONS = ['全部部门', ...DEPT_POINTS.map((d) => d.dept)]
 
 export default function WorkbenchPage() {
   const router = useRouter()
+  const [trendRange, setTrendRange] = React.useState<'7d' | '30d'>('7d')
+  const [dept, setDept] = React.useState('全部部门')
+  const [startDate, setStartDate] = React.useState('2026-08-01')
+  const [endDate, setEndDate] = React.useState('2026-08-11')
+
+  const deptRows = React.useMemo(
+    () =>
+      dept === '全部部门'
+        ? DEPT_POINTS
+        : DEPT_POINTS.filter((d) => d.dept === dept),
+    [dept],
+  )
+
+  const memberRows = React.useMemo(
+    () =>
+      dept === '全部部门'
+        ? DEPT_POINT_MEMBERS
+        : DEPT_POINT_MEMBERS.filter((m) => m.dept === dept),
+    [dept],
+  )
+
+  const suffix = `${dept}_${startDate}至${endDate}`
+
+  function exportDeptSummary() {
+    downloadCsv(
+      `部门积分汇总_${suffix}.csv`,
+      ['部门', '积分合计', '统计开始日期', '统计结束日期'],
+      deptRows.map((d) => [d.dept, d.积分, startDate, endDate]),
+    )
+    toast.success(`已导出 ${deptRows.length} 个部门的积分汇总`)
+  }
+
+  function exportMemberDetail() {
+    downloadCsv(
+      `部门员工积分明细_${suffix}.csv`,
+      ['部门', '姓名', '工号', '获取积分', '消耗积分', '积分余额', '统计区间'],
+      memberRows.map((m) => [
+        m.dept,
+        m.name,
+        m.employeeNo,
+        m.获取,
+        m.消耗,
+        m.余额,
+        `${startDate} 至 ${endDate}`,
+      ]),
+    )
+    toast.success(`已导出 ${memberRows.length} 条员工积分明细`)
+  }
 
   function goto(path: string) {
     router.push(path)
@@ -43,18 +111,88 @@ export default function WorkbenchPage() {
 
       {/* 趋势与排行 */}
       <div className="mb-4 grid gap-4 xl:grid-cols-3">
-        <Panel title="资讯阅读与视听播放趋势" className="xl:col-span-2">
-          <ReadTrendChart />
+        <Panel
+          title="资讯阅读与视听播放趋势"
+          className="xl:col-span-2"
+          extra={
+            <div
+              role="tablist"
+              aria-label="趋势时间范围"
+              className="flex items-center gap-1 rounded-md border border-border p-0.5"
+            >
+              {TREND_RANGES.map((r) => (
+                <button
+                  key={r.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={trendRange === r.key}
+                  onClick={() => setTrendRange(r.key)}
+                  className={`h-6 rounded px-2.5 text-xs transition-colors ${
+                    trendRange === r.key
+                      ? 'bg-brand text-brand-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          <ReadTrendChart range={trendRange} />
         </Panel>
-        <Panel title="部门积分排行">
-          <DeptPointsChart />
+
+        <Panel
+          title="部门积分排行"
+          extra={
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={<Button size="xs" variant="outline" />}
+              >
+                <Download className="size-3.5" />
+                导出
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem onClick={exportDeptSummary}>
+                  导出部门积分汇总
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportMemberDetail}>
+                  导出部门员工积分明细
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          }
+        >
+          <div className="mb-3 flex flex-col gap-2 border-b border-border pb-3">
+            <NativeSelect
+              aria-label="部门"
+              value={dept}
+              onChange={setDept}
+              options={DEPT_OPTIONS}
+            />
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                aria-label="开始日期"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-8 text-[13px]"
+              />
+              <span className="text-xs text-muted-foreground">至</span>
+              <Input
+                type="date"
+                aria-label="结束日期"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="h-8 text-[13px]"
+              />
+            </div>
+          </div>
+          <DeptPointsChart data={deptRows} />
         </Panel>
       </div>
 
-      <div className="mb-4 grid gap-4 xl:grid-cols-3">
-        <Panel title="积分获取与消耗（月）" className="xl:col-span-2">
-          <PointsChart />
-        </Panel>
+      <div className="grid gap-4 xl:grid-cols-3">
         <Panel
           title="系统状态"
           bodyClassName="p-0"
@@ -89,9 +227,7 @@ export default function WorkbenchPage() {
             ))}
           </ul>
         </Panel>
-      </div>
 
-      <div className="grid gap-4 xl:grid-cols-2">
         <Panel title="热门资讯" bodyClassName="p-0">
           <ol className="divide-y divide-border">
             {HOT_NEWS.map((n, i) => (
