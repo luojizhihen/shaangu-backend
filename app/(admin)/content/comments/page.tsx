@@ -50,11 +50,13 @@ export default function CommentsPage() {
   const [newsTitle, setNewsTitle] = React.useState(fromNews)
   const [content, setContent] = React.useState('')
   const [nickname, setNickname] = React.useState('')
+  const [author, setAuthor] = React.useState('')
   const [state, setState] = React.useState('全部状态')
   const [query, setQuery] = React.useState({
     newsTitle: fromNews,
     content: '',
     nickname: '',
+    author: '',
     state: '全部状态',
   })
 
@@ -67,10 +69,11 @@ export default function CommentsPage() {
         const hitNews = c.newsTitle.includes(query.newsTitle.trim())
         const hitContent = c.content.includes(query.content.trim())
         const hitNickname = c.nickname.includes(query.nickname.trim())
+        const hitAuthor = c.author.includes(query.author.trim())
         const hitState =
           query.state === '全部状态' ||
           (query.state === '已隐藏' ? c.hidden : !c.hidden)
-        return hitNews && hitContent && hitNickname && hitState
+        return hitNews && hitContent && hitNickname && hitAuthor && hitState
       }),
     [comments, query],
   )
@@ -78,7 +81,7 @@ export default function CommentsPage() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ newsTitle, content, nickname, state })
+    setQuery({ newsTitle, content, nickname, author, state })
     table.setPage(1)
   }
 
@@ -86,8 +89,15 @@ export default function CommentsPage() {
     setNewsTitle('')
     setContent('')
     setNickname('')
+    setAuthor('')
     setState('全部状态')
-    setQuery({ newsTitle: '', content: '', nickname: '', state: '全部状态' })
+    setQuery({
+      newsTitle: '',
+      content: '',
+      nickname: '',
+      author: '',
+      state: '全部状态',
+    })
   }
 
   function batch(action: string, fn: () => BatchResult[]) {
@@ -133,11 +143,18 @@ export default function CommentsPage() {
             onChange={(e) => setContent(e.target.value)}
           />
         </FilterField>
-        <FilterField label="会员昵称">
+        <FilterField label="昵称">
           <Input
             value={nickname}
-            placeholder="请输入会员昵称"
+            placeholder="请输入昵称"
             onChange={(e) => setNickname(e.target.value)}
+          />
+        </FilterField>
+        <FilterField label="员工姓名">
+          <Input
+            value={author}
+            placeholder="请输入员工姓名"
+            onChange={(e) => setAuthor(e.target.value)}
           />
         </FilterField>
         <FilterField label="评论状态">
@@ -189,8 +206,8 @@ export default function CommentsPage() {
               </TableHead>
               <TableHead className="min-w-56">所属资讯</TableHead>
               <TableHead className="min-w-64">评论内容</TableHead>
-              <TableHead className="w-32">会员昵称</TableHead>
-              <TableHead className="w-28">评论者</TableHead>
+              <TableHead className="w-32">昵称</TableHead>
+              <TableHead className="w-28">员工姓名</TableHead>
               <TableHead className="w-28">所属部门</TableHead>
               <TableHead className="w-44">评论时间</TableHead>
               <TableHead className="w-20">状态</TableHead>
