@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, RefreshCcw, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, RefreshCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -21,7 +21,6 @@ import {
 } from '@/components/content/table-shell'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import {
-  removeComments,
   setCommentHidden,
   useContent,
   type BatchResult,
@@ -50,12 +49,12 @@ export default function CommentsPage() {
 
   const [newsTitle, setNewsTitle] = React.useState(fromNews)
   const [content, setContent] = React.useState('')
-  const [phone, setPhone] = React.useState('')
+  const [nickname, setNickname] = React.useState('')
   const [state, setState] = React.useState('全部状态')
   const [query, setQuery] = React.useState({
     newsTitle: fromNews,
     content: '',
-    phone: '',
+    nickname: '',
     state: '全部状态',
   })
 
@@ -67,11 +66,11 @@ export default function CommentsPage() {
       comments.filter((c) => {
         const hitNews = c.newsTitle.includes(query.newsTitle.trim())
         const hitContent = c.content.includes(query.content.trim())
-        const hitPhone = c.phone.includes(query.phone.trim())
+        const hitNickname = c.nickname.includes(query.nickname.trim())
         const hitState =
           query.state === '全部状态' ||
           (query.state === '已隐藏' ? c.hidden : !c.hidden)
-        return hitNews && hitContent && hitPhone && hitState
+        return hitNews && hitContent && hitNickname && hitState
       }),
     [comments, query],
   )
@@ -79,16 +78,16 @@ export default function CommentsPage() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ newsTitle, content, phone, state })
+    setQuery({ newsTitle, content, nickname, state })
     table.setPage(1)
   }
 
   function reset() {
     setNewsTitle('')
     setContent('')
-    setPhone('')
+    setNickname('')
     setState('全部状态')
-    setQuery({ newsTitle: '', content: '', phone: '', state: '全部状态' })
+    setQuery({ newsTitle: '', content: '', nickname: '', state: '全部状态' })
   }
 
   function batch(action: string, fn: () => BatchResult[]) {
@@ -134,11 +133,11 @@ export default function CommentsPage() {
             onChange={(e) => setContent(e.target.value)}
           />
         </FilterField>
-        <FilterField label="会员手机号">
+        <FilterField label="会员昵称">
           <Input
-            value={phone}
-            placeholder="请输入会员手机号"
-            onChange={(e) => setPhone(e.target.value)}
+            value={nickname}
+            placeholder="请输入会员昵称"
+            onChange={(e) => setNickname(e.target.value)}
           />
         </FilterField>
         <FilterField label="评论状态">
@@ -171,14 +170,6 @@ export default function CommentsPage() {
             <Eye className="size-3.5" />
             批量显示
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => batch('删除评论', () => removeComments(table.selected))}
-          >
-            <Trash2 className="size-3.5" />
-            批量删除
-          </Button>
           <span className="ml-auto text-xs text-muted-foreground">
             共 {comments.length} 条评论 · 已隐藏 {hiddenCount} 条 · 已选{' '}
             {table.selected.length} 条
@@ -198,7 +189,7 @@ export default function CommentsPage() {
               </TableHead>
               <TableHead className="min-w-56">所属资讯</TableHead>
               <TableHead className="min-w-64">评论内容</TableHead>
-              <TableHead className="w-32">会员手机号</TableHead>
+              <TableHead className="w-32">会员昵称</TableHead>
               <TableHead className="w-28">评论者</TableHead>
               <TableHead className="w-28">所属部门</TableHead>
               <TableHead className="w-44">评论时间</TableHead>
@@ -235,7 +226,7 @@ export default function CommentsPage() {
                 <TableCell>
                   <span className="line-clamp-2 whitespace-normal">{c.content}</span>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{c.phone}</TableCell>
+                <TableCell>{c.nickname}</TableCell>
                 <TableCell>{c.author}</TableCell>
                 <TableCell className="text-muted-foreground">{c.dept}</TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
@@ -258,17 +249,6 @@ export default function CommentsPage() {
                       }}
                     >
                       {c.hidden ? <EyeOff /> : <Eye />}
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label="删除评论"
-                      onClick={() => {
-                        removeComments([c.id])
-                        toast.success('评论已删除')
-                      }}
-                    >
-                      <Trash2 className="text-destructive" />
                     </Button>
                   </div>
                 </TableCell>

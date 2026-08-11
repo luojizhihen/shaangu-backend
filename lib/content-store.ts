@@ -43,7 +43,6 @@ export type NewsItem = {
   status: NewsStatus
   top: boolean
   sort: number
-  allowComment: boolean
   createdAt: string
   updatedAt: string
   publishedAt: string
@@ -59,7 +58,7 @@ export type CommentItem = {
   newsId: string
   newsTitle: string
   content: string
-  phone: string
+  nickname: string
   author: string
   dept: string
   createdAt: string
@@ -166,20 +165,10 @@ const SEED_CATEGORIES: Category[] = [
   },
 ]
 
-const BODY_LONG = `　　近年来，公司围绕主业持续推进技术创新与数字化转型，在大型能量转换设备的智能运维、分布式能源系统集成等方向取得了一批可复用的成果。
+/** 正文为富文本，统一以 HTML 片段存储 */
+const BODY_LONG = `<p>近年来，公司围绕主业持续推进技术创新与数字化转型，在大型能量转换设备的智能运维、分布式能源系统集成等方向取得了一批<strong>可复用的成果</strong>。</p><h3>会议主要精神</h3><p>会议指出，要坚持问题导向，把生产一线的真实需求作为课题来源，推动数据在设计、制造、服务各环节贯通；要强化跨部门协同，建立统一的数据口径与责任分工；要抓好人才培养，让骨干在项目中成长。</p><blockquote>把一线需求作为课题来源，让数据在业务里跑起来。</blockquote><p>下一阶段，各单位要按照既定节点推进，做到任务清单化、进度可视化，确保各项举措落地见效。</p>`
 
-　　会议指出，要坚持问题导向，把生产一线的真实需求作为课题来源，推动数据在设计、制造、服务各环节贯通；要强化跨部门协同，建立统一的数据口径与责任分工；要抓好人才培养，让骨干在项目中成长。
-
-　　下一阶段，各单位要按照既定节点推进，做到任务清单化、进度可视化，确保各项举措落地见效。`
-
-const BODY_NOTICE = `　　为进一步提升全员信息安全意识，规范信息系统使用行为，现就开展年度信息安全培训有关事项通知如下：
-
-　　一、培训对象：集团本部及各子公司全体在职员工。
-　　二、培训时间：2026 年 8 月 18 日至 8 月 29 日，分四批线上进行。
-　　三、培训内容：数据分级分类、终端安全、账号与口令管理、钓鱼邮件识别、涉密信息处理。
-　　四、考核要求：培训结束后统一在线考核，成绩计入年度培训档案。
-
-　　请各单位按附件名单组织参加，具体安排见附件《年度信息安全培训实施方案》。`
+const BODY_NOTICE = `<p>为进一步提升全员信息安全意识，规范信息系统使用行为，现就开展年度信息安全培训有关事项通知如下：</p><ol><li><strong>培训对象：</strong>集团本部及各子公司全体在职员工。</li><li><strong>培训时间：</strong>2026 年 8 月 18 日至 8 月 29 日，分四批线上进行。</li><li><strong>培训内容：</strong>数据分级分类、终端安全、账号与口令管理、钓鱼邮件识别、涉密信息处理。</li><li><strong>考核要求：</strong>培训结束后统一在线考核，成绩计入年度培训档案。</li></ol><p>请各单位按附件名单组织参加，具体安排见附件《年度信息安全培训实施方案》。</p>`
 
 const SEED_NEWS: NewsItem[] = [
   {
@@ -195,7 +184,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: true,
     sort: 1,
-    allowComment: true,
     createdAt: '2026-08-11 08:12:20',
     updatedAt: '2026-08-11 09:30:11',
     publishedAt: '2026-08-11 09:30:11',
@@ -218,7 +206,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: true,
     sort: 2,
-    allowComment: false,
     createdAt: '2026-08-10 10:02:41',
     updatedAt: '2026-08-10 14:20:03',
     publishedAt: '2026-08-10 14:20:03',
@@ -243,7 +230,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: false,
     sort: 3,
-    allowComment: true,
     createdAt: '2026-08-09 09:14:12',
     updatedAt: '2026-08-09 15:41:52',
     publishedAt: '2026-08-09 15:41:52',
@@ -265,7 +251,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: false,
     sort: 4,
-    allowComment: true,
     createdAt: '2026-08-08 11:00:00',
     updatedAt: '2026-08-08 16:12:30',
     publishedAt: '2026-08-08 16:12:30',
@@ -289,7 +274,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: false,
     sort: 5,
-    allowComment: true,
     createdAt: '2026-08-07 09:32:18',
     updatedAt: '2026-08-07 10:44:02',
     publishedAt: '2026-08-07 10:44:02',
@@ -311,7 +295,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '草稿',
     top: false,
     sort: 6,
-    allowComment: true,
     createdAt: '2026-08-11 07:55:10',
     updatedAt: '2026-08-11 08:02:44',
     publishedAt: '',
@@ -333,7 +316,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '草稿',
     top: false,
     sort: 7,
-    allowComment: false,
     createdAt: '2026-08-11 08:40:05',
     updatedAt: '2026-08-11 08:52:19',
     publishedAt: '',
@@ -357,7 +339,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '草稿',
     top: false,
     sort: 8,
-    allowComment: true,
     createdAt: '2026-08-06 14:22:31',
     updatedAt: '2026-08-06 14:50:08',
     publishedAt: '',
@@ -379,7 +360,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已下架',
     top: false,
     sort: 9,
-    allowComment: false,
     createdAt: '2026-08-05 09:12:00',
     updatedAt: '2026-08-10 11:22:44',
     publishedAt: '2026-08-05 10:30:12',
@@ -401,7 +381,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已下架',
     top: false,
     sort: 10,
-    allowComment: true,
     createdAt: '2026-08-04 08:30:00',
     updatedAt: '2026-08-09 17:02:10',
     publishedAt: '2026-08-04 09:10:00',
@@ -423,7 +402,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: false,
     sort: 11,
-    allowComment: true,
     createdAt: '2026-08-03 10:10:10',
     updatedAt: '2026-08-03 11:20:30',
     publishedAt: '2026-08-03 11:20:30',
@@ -445,7 +423,6 @@ const SEED_NEWS: NewsItem[] = [
     status: '已发布',
     top: false,
     sort: 12,
-    allowComment: true,
     createdAt: '2026-08-02 09:05:00',
     updatedAt: '2026-08-02 10:15:00',
     publishedAt: '2026-08-02 10:15:00',
@@ -463,7 +440,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260811-001',
     newsTitle: '集团召开数字化建设专题推进会',
     content: '数据口径统一以后，报表确实省了不少事。',
-    phone: '13891234567',
+    nickname: '老王头',
     author: '王建国',
     dept: '透平机械',
     createdAt: '2026-08-11 10:22:08',
@@ -474,7 +451,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260811-001',
     newsTitle: '集团召开数字化建设专题推进会',
     content: '希望把一线的需求也纳入课题来源。',
-    phone: '13809876543',
+    nickname: '慧敏一号',
     author: '李慧敏',
     dept: '透平机械',
     createdAt: '2026-08-11 10:19:43',
@@ -485,7 +462,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260811-001',
     newsTitle: '集团召开数字化建设专题推进会',
     content: '下班',
-    phone: '13512345678',
+    nickname: '鹏哥',
     author: '赵鹏',
     dept: '透平机械',
     createdAt: '2026-08-11 09:41:32',
@@ -496,7 +473,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260810-002',
     newsTitle: '关于开展年度信息安全培训的通知',
     content: '附件里的名单打开是空的，麻烦核实一下。',
-    phone: '13698765432',
+    nickname: '安全员小赵',
     author: '陈晓东',
     dept: '能源工程',
     createdAt: '2026-08-10 16:20:12',
@@ -507,7 +484,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260810-002',
     newsTitle: '关于开展年度信息安全培训的通知',
     content: '第四批能不能改到下午？',
-    phone: '13787654321',
+    nickname: '透平小李',
     author: '周芸',
     dept: '能源工程',
     createdAt: '2026-08-10 14:59:41',
@@ -518,7 +495,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260809-003',
     newsTitle: '奋斗者｜十年磨一“机”：透平装配班组的毫米之争',
     content: '班组的老师傅带徒弟是真用心。',
-    phone: '13901234567',
+    nickname: '车间老周',
     author: '刘志强',
     dept: '智能装备',
     createdAt: '2026-08-09 18:15:40',
@@ -529,7 +506,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260809-003',
     newsTitle: '奋斗者｜十年磨一“机”：透平装配班组的毫米之争',
     content: '广告推广联系我 xxxxx',
-    phone: '13312349876',
+    nickname: '匿名读者',
     author: '匿名用户',
     dept: '—',
     createdAt: '2026-08-09 17:52:30',
@@ -540,7 +517,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260808-004',
     newsTitle: '内刊 2026 年第 7 期上线',
     content: '内刊 PDF 在手机上打开有点慢。',
-    phone: '13455556666',
+    nickname: '装配阿凯',
     author: '孙悦',
     dept: '智能装备',
     createdAt: '2026-08-08 20:10:22',
@@ -549,9 +526,9 @@ const SEED_COMMENTS: CommentItem[] = [
   {
     id: 'CMT-0009',
     newsId: 'NEWS-20260807-005',
-    newsTitle: '学习｜能源系统节能技术要点解析',
+    newsTitle: '学习｜能���系统节能技术要点解析',
     content: '案例三的改造前后数据能否补充一下？',
-    phone: '13566667777',
+    nickname: '内刊常客',
     author: '郑文博',
     dept: '党群工作部',
     createdAt: '2026-08-07 15:31:05',
@@ -562,7 +539,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260807-005',
     newsTitle: '学习｜能源系统节能技术要点解析',
     content: '111',
-    phone: '13677778888',
+    nickname: '学习小组长',
     author: '马丽娜',
     dept: '党群工作部',
     createdAt: '2026-08-07 12:04:18',
@@ -573,7 +550,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260803-011',
     newsTitle: '学习｜设备点检标准化作业指导',
     content: '点检表模板可以做成附件下载吗？',
-    phone: '13788889999',
+    nickname: '技术宅小陈',
     author: '杨帆',
     dept: '信息管理部',
     createdAt: '2026-08-03 14:22:51',
@@ -584,7 +561,7 @@ const SEED_COMMENTS: CommentItem[] = [
     newsId: 'NEWS-20260802-012',
     newsTitle: '奋斗者｜从图纸到现场：青年工程师的第一台机组',
     content: '年轻人成长很快，点赞。',
-    phone: '13899990000',
+    nickname: '夜班小徐',
     author: '何静',
     dept: '信息管理部',
     createdAt: '2026-08-02 19:08:33',
@@ -776,7 +753,6 @@ export function createNews(input: {
   cover: string
   sort: number
   top: boolean
-  allowComment: boolean
   attachments: Attachment[]
   author: string
   dept: string
@@ -794,7 +770,6 @@ export function createNews(input: {
     status: '草稿',
     top: input.top,
     sort: input.sort,
-    allowComment: input.allowComment,
     createdAt: ts,
     updatedAt: ts,
     publishedAt: '',
@@ -835,7 +810,8 @@ export function publishNews(ids: string[], publisher: string): BatchResult[] {
       })
       return n
     }
-    if (!n.title.trim() || !n.body.trim()) {
+    // 正文为富文本 HTML，去标签后校验是否有实际内容
+    if (!n.title.trim() || !n.body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()) {
       results.push({ id: n.id, label: n.title, ok: false, message: '标题或正文为空' })
       return n
     }
@@ -861,7 +837,7 @@ export function putOnline(ids: string[]): BatchResult[] {
       return n
     }
     if (n.status === '已发布') {
-      results.push({ id: n.id, label: n.title, ok: false, message: '已处于上架状态' })
+      results.push({ id: n.id, label: n.title, ok: false, message: '已处于上���状态' })
       return n
     }
     if (!n.cover) {

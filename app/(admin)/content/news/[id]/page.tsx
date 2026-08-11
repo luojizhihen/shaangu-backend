@@ -29,7 +29,6 @@ import {
   getNews,
   publishNews,
   putOnline,
-  removeComments,
   removeNews,
   setCommentHidden,
   setTop,
@@ -78,7 +77,6 @@ export default function NewsDetailPage() {
       cover: target.cover,
       sort: target.sort,
       top: target.top,
-      allowComment: target.allowComment,
       attachments: target.attachments,
     })
   }, [id])
@@ -108,7 +106,8 @@ export default function NewsDetailPage() {
 
   function save() {
     if (!values) return
-    if (!values.title.trim() || !values.body.trim()) {
+    const plainBody = values.body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()
+    if (!values.title.trim() || !plainBody) {
       toast.error('标题与正文不能为空')
       return
     }
@@ -261,19 +260,8 @@ export default function NewsDetailPage() {
                 <Eye className="size-3.5" />
                 批量显示
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  governComments('删除评论', () => removeComments(table.selected))
-                }
-              >
-                <Trash2 className="size-3.5" />
-                批量删除
-              </Button>
               <span className="ml-auto text-xs text-muted-foreground">
-                该资讯{item.allowComment ? '允许' : '已关闭'}评论 · 已选{' '}
-                {table.selected.length} 条
+                共 {rows.length} 条评论 · 已选 {table.selected.length} 条
               </span>
             </div>
             <Table className="text-[13px]">
@@ -288,7 +276,7 @@ export default function NewsDetailPage() {
                   </TableHead>
                   <TableHead className="min-w-72">评论内容</TableHead>
                   <TableHead className="w-28">评论者</TableHead>
-                  <TableHead className="w-32">会员手机号</TableHead>
+                  <TableHead className="w-32">会员昵称</TableHead>
                   <TableHead className="w-44">评论时间</TableHead>
                   <TableHead className="w-20">状态</TableHead>
                   <TableHead className="w-24 pr-4 text-center">操作</TableHead>
@@ -311,7 +299,7 @@ export default function NewsDetailPage() {
                       <span className="line-clamp-2 whitespace-normal">{c.content}</span>
                     </TableCell>
                     <TableCell>{c.author}</TableCell>
-                    <TableCell className="font-mono text-xs">{c.phone}</TableCell>
+                    <TableCell>{c.nickname}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {c.createdAt}
                     </TableCell>
@@ -332,17 +320,6 @@ export default function NewsDetailPage() {
                           }}
                         >
                           {c.hidden ? <EyeOff /> : <Eye />}
-                        </Button>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          aria-label="删除评论"
-                          onClick={() => {
-                            removeComments([c.id])
-                            toast.success('评论已删除')
-                          }}
-                        >
-                          <Trash2 className="text-destructive" />
                         </Button>
                       </div>
                     </TableCell>

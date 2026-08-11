@@ -1,20 +1,14 @@
 'use client'
 
 import * as React from 'react'
-import Image from 'next/image'
-import { Paperclip, Trash2, Upload } from 'lucide-react'
+import { ImagePlus, Paperclip, Trash2, Upload } from 'lucide-react'
 
-import {
-  IMAGE_LIBRARY,
-  NOTICE_CATEGORY,
-  type Attachment,
-  type Category,
-} from '@/lib/content-store'
+import { NOTICE_CATEGORY, type Attachment, type Category } from '@/lib/content-store'
+import { RichTextEditor } from '@/components/content/rich-text-editor'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Panel, NativeSelect } from '@/components/layout/page-frame'
-import { cn } from '@/lib/utils'
 
 export type NewsFormValues = {
   title: string
@@ -24,7 +18,6 @@ export type NewsFormValues = {
   cover: string
   sort: number
   top: boolean
-  allowComment: boolean
   attachments: Attachment[]
 }
 
@@ -36,7 +29,6 @@ export const EMPTY_NEWS_FORM: NewsFormValues = {
   cover: '',
   sort: 99,
   top: false,
-  allowComment: true,
   attachments: [],
 }
 
@@ -75,6 +67,7 @@ export function NewsForm({
   categories: Category[]
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null)
+  const coverRef = React.useRef<HTMLInputElement>(null)
   const current = categories.find((c) => c.name === values.category)
   const attachmentEnabled = Boolean(current?.withAttachment)
   const isNotice = values.category === NOTICE_CATEGORY
@@ -91,6 +84,14 @@ export function NewsForm({
     }))
     onChange({ attachments: [...values.attachments, ...added] })
     if (fileRef.current) fileRef.current.value = ''
+  }
+
+  /** 封面图仅保留一张：始终取第一个文件并覆盖原有封面 */
+  function pickCover(files: FileList | null) {
+    const file = files?.[0]
+    if (!file) return
+    onChange({ cover: URL.createObjectURL(file) })
+    if (coverRef.current) coverRef.current.value = ''
   }
 
   return (
@@ -136,12 +137,9 @@ export function NewsForm({
           </FormRow>
 
           <FormRow label="正文" required>
-            <textarea
+            <RichTextEditor
               value={values.body}
-              rows={14}
-              placeholder="请输入正文内容，段落之间用回车分隔"
-              onChange={(e) => onChange({ body: e.target.value })}
-              className="scroll-thin w-full rounded-md border border-input bg-surface px-3 py-2 text-[13px] leading-relaxed text-foreground focus:border-ring focus:outline-none"
+              onChange={(html) => onChange({ body: html })}
             />
           </FormRow>
         </div>
@@ -149,47 +147,54 @@ export function NewsForm({
 
       <div className="grid gap-4 self-start">
         <Panel title="封面图">
-          <div className="grid grid-cols-2 gap-2">
-            {IMAGE_LIBRARY.map((img) => (
-              <button
-                key={img.src}
-                type="button"
-                aria-pressed={values.cover === img.src}
-                onClick={() => onChange({ cover: img.src })}
-                className={cn(
-                  'group relative aspect-[16/9] overflow-hidden rounded-md border transition-colors',
-                  values.cover === img.src
-                    ? 'border-brand ring-2 ring-brand/25'
-                    : 'border-border hover:border-brand/40',
-                )}
-              >
-                <Image
-                  src={img.src || '/placeholder.svg'}
-                  alt={img.name}
-                  fill
-                  sizes="160px"
-                  className="object-cover"
-                />
-                <span className="absolute inset-x-0 bottom-0 bg-foreground/55 px-1.5 py-0.5 text-[11px] text-surface">
-                  {img.name}
-                </span>
-              </button>
-            ))}
-          </div>
+          <input
+            ref={coverRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => pickCover(e.target.files)}
+          />
           {values.cover ? (
-            <Button
-              size="xs"
-              variant="ghost"
-              className="mt-2 px-0"
-              onClick={() => onChange({ cover: '' })}
-            >
-              清除封面
-            </Button>
+            <div className="relative aspect-[16/9] overflow-hidden rounded-md border border-border">
+              {/* 本地上传得到的是 blob 地址，使用原生 img 直接渲染 */}
+              <img
+                src={values.cover || '/placeholder.svg'}
+                alt="资讯封面图"
+                className="absolute inset-0 size-full object-cover"
+              />
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-foreground/55 px-1.5 py-1">
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  className="h-6 text-surface hover:bg-surface/20 hover:text-surface"
+                  onClick={() => coverRef.current?.click()}
+                >
+                  重新上传
+                </Button>
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  aria-label="删除封面图"
+                  className="text-surface hover:bg-surface/20 hover:text-surface"
+                  onClick={() => onChange({ cover: '' })}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+            </div>
           ) : (
-            <p className="mt-2 text-xs text-muted-foreground">
-              未设置封面的稿件无法发布或上架。
-            </p>
+            <button
+              type="button"
+              onClick={() => coverRef.current?.click()}
+              className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-brand"
+            >
+              <ImagePlus className="size-6" />
+              <span className="text-[13px]">点击上传封面图</span>
+            </button>
           )}
+          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            封面图仅支持上传一张，建议尺寸 16:9；未设置封面的稿件无法发布或上架。
+          </p>
         </Panel>
 
         <Panel title="发布属性">
@@ -213,17 +218,6 @@ export function NewsForm({
                 aria-label="置顶展示"
               />
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[13px] text-muted-foreground">允许评论</span>
-              <Switch
-                checked={values.allowComment}
-                onCheckedChange={(v) => onChange({ allowComment: v })}
-                aria-label="允许评论"
-              />
-            </div>
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              排序号越小越靠前；置顶仅对已发布内容生效，下架后自动取消置顶。
-            </p>
           </div>
         </Panel>
 

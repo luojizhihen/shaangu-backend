@@ -1,9 +1,9 @@
 'use client'
 
-import Image from 'next/image'
 import { Paperclip } from 'lucide-react'
 
 import type { Attachment } from '@/lib/content-store'
+import { RichText } from '@/components/content/rich-text-editor'
 import {
   Dialog,
   DialogClose,
@@ -66,12 +66,11 @@ export function NewsPreviewDialog({
 
               {data.cover ? (
                 <div className="relative mt-3 aspect-[16/9] overflow-hidden rounded-md">
-                  <Image
+                  {/* 封面可能为本地上传的 blob 地址，统一用原生 img */}
+                  <img
                     src={data.cover || '/placeholder.svg'}
                     alt={`${data.title} 封面图`}
-                    fill
-                    sizes="384px"
-                    className="object-cover"
+                    className="absolute inset-0 size-full object-cover"
                   />
                 </div>
               ) : (
@@ -86,11 +85,7 @@ export function NewsPreviewDialog({
                 </p>
               )}
 
-              <div className="mt-3 space-y-3 text-[13px] leading-relaxed text-foreground">
-                {data.body.split('\n').filter(Boolean).map((p, i) => (
-                  <p key={i}>{p}</p>
-                ))}
-              </div>
+              <RichText html={data.body} className="mt-3" />
 
               {data.attachments.length > 0 && (
                 <div className="mt-4 border-t border-border pt-3">

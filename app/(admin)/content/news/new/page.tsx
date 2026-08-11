@@ -46,7 +46,8 @@ export default function NewNewsPage() {
       toast.error('请填写资讯标题')
       return false
     }
-    if (!values.body.trim()) {
+    // 正文为富文本 HTML，去标签后判断是否有实际内容
+    if (!values.body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()) {
       toast.error('请填写资讯正文')
       return false
     }

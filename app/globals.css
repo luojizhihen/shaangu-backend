@@ -131,4 +131,40 @@
     background: #c5d0da;
     border-radius: 999px;
   }
+
+  /* 资讯正文富文本排版（编辑器与阅读预览共用） */
+  .rich-text > * + * {
+    margin-top: 0.75rem;
+  }
+  .rich-text p {
+    text-indent: 2em;
+  }
+  .rich-text h3 {
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--brand);
+  }
+  .rich-text blockquote {
+    border-left: 3px solid var(--brand);
+    background: var(--muted);
+    padding: 0.5rem 0.75rem;
+    color: var(--muted-foreground);
+  }
+  .rich-text ul,
+  .rich-text ol {
+    padding-left: 1.75rem;
+  }
+  .rich-text ul {
+    list-style: disc;
+  }
+  .rich-text ol {
+    list-style: decimal;
+  }
+  .rich-text li + li {
+    margin-top: 0.375rem;
+  }
+  .rich-text a {
+    color: var(--brand);
+    text-decoration: underline;
+  }
 }

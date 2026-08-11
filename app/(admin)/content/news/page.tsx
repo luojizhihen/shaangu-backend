@@ -6,7 +6,6 @@ import {
   ArrowDownUp,
   ArrowUpFromLine,
   ArrowDownToLine,
-  Eye,
   MessageSquare,
   Pin,
   PinOff,
@@ -34,10 +33,6 @@ import {
   useTableState,
 } from '@/components/content/table-shell'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
-import {
-  NewsPreviewDialog,
-  type PreviewData,
-} from '@/components/content/news-preview'
 import {
   NEWS_STATUSES,
   publishNews,
@@ -104,7 +99,6 @@ export default function NewsListPage() {
 
   const [results, setResults] = React.useState<BatchResult[] | null>(null)
   const [resultAction, setResultAction] = React.useState('批量操作')
-  const [preview, setPreview] = React.useState<PreviewData | null>(null)
   const [confirm, setConfirm] = React.useState<{
     action: string
     tip: string
@@ -173,31 +167,6 @@ export default function NewsListPage() {
   function ask(action: string, tip: string, run: () => BatchResult[]) {
     if (!requireSelection()) return
     setConfirm({ action, tip, run })
-  }
-
-  function openPreview(item: NewsItem) {
-    setPreview({
-      title: item.title,
-      category: item.category,
-      summary: item.summary,
-      body: item.body,
-      cover: item.cover,
-      author: item.author,
-      dept: item.dept,
-      publishedAt: item.publishedAt,
-      status: item.status,
-      attachments: item.attachments,
-    })
-  }
-
-  function previewSelected() {
-    if (!requireSelection()) return
-    if (table.selected.length > 1) {
-      toast.error('预览一次只能选择一条资讯')
-      return
-    }
-    const item = news.find((n) => n.id === table.selected[0])
-    if (item) openPreview(item)
   }
 
   const SortHead = ({ label, k }: { label: string; k: SortKey }) => (
@@ -274,10 +243,6 @@ export default function NewsListPage() {
           <Button size="sm" onClick={() => router.push('/content/news/new')}>
             <Plus className="size-3.5" />
             新增资讯
-          </Button>
-          <Button size="sm" variant="outline" onClick={previewSelected}>
-            <Eye className="size-3.5" />
-            预览
           </Button>
           {canPublish && (
             <Button
@@ -458,14 +423,6 @@ export default function NewsListPage() {
                     <Button
                       size="icon-sm"
                       variant="ghost"
-                      aria-label={`预览 ${n.title}`}
-                      onClick={() => openPreview(n)}
-                    >
-                      <Eye />
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
                       aria-label={`查看 ${n.title} 的评论`}
                       onClick={() =>
                         router.push(
@@ -528,12 +485,6 @@ export default function NewsListPage() {
         onOpenChange={(v) => !v && setResults(null)}
         action={resultAction}
         results={results ?? []}
-      />
-
-      <NewsPreviewDialog
-        open={preview !== null}
-        onOpenChange={(v) => !v && setPreview(null)}
-        data={preview}
       />
     </>
   )
