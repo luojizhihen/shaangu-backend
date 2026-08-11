@@ -24,10 +24,8 @@ export type MediaItem = {
   title: string
   kind: MediaKind
   summary: string
-  /** 视频封面取首帧截图，陕鼓之声为手动上传 */
+  /** 封面图，视频与「陕鼓之声」均由管理员手动上传 */
   cover: string
-  /** 视频封面是否来自首帧自动截取 */
-  coverFromFrame: boolean
   fileName: string
   fileSize: string
   /** 时长 mm:ss */
@@ -82,11 +80,17 @@ export const PROCESS_STATES: ProcessState[] = [
   '处理失败',
 ]
 
-export const VIDEO_ACCEPT = 'video/mp4,video/quicktime,video/x-msvideo'
+/** 视频仅支持 MP4 上传，无转码环节 */
+export const VIDEO_ACCEPT = 'video/mp4'
 export const AUDIO_ACCEPT = 'audio/mpeg,audio/mp4,audio/wav,audio/aac'
 
 export function acceptOf(kind: MediaKind) {
   return kind === '视频' ? VIDEO_ACCEPT : AUDIO_ACCEPT
+}
+
+/** 视频直传直播放，不做转码；仅「陕鼓之声」保留媒体处理环节 */
+export function needsProcess(kind: MediaKind) {
+  return kind === '陕鼓之声'
 }
 
 /* ---------------- 种子数据 ---------------- */
@@ -99,7 +103,6 @@ const SEED_MEDIA: MediaItem[] = [
     summary:
       '跟随镜头走进总装车间，记录大型能量转换设备从部件加工到整机试车的全过程。',
     cover: '/av/frame-workshop.png',
-    coverFromFrame: true,
     fileName: 'workshop-4k.mp4',
     fileSize: '486.2 MB',
     duration: '08:42',
@@ -125,7 +128,6 @@ const SEED_MEDIA: MediaItem[] = [
     kind: '视频',
     summary: '会议部署下半年重点任务，明确技术创新与数字化转型的推进节奏。',
     cover: '/av/frame-meeting.png',
-    coverFromFrame: true,
     fileName: 'midyear-meeting.mp4',
     fileSize: '722.5 MB',
     duration: '15:20',
@@ -151,7 +153,6 @@ const SEED_MEDIA: MediaItem[] = [
     kind: '陕鼓之声',
     summary: '音频专栏走进检修班组，讲述交接班前后的三十分钟。',
     cover: '/av/audio-voice.png',
-    coverFromFrame: false,
     fileName: 'voice-042.mp3',
     fileSize: '18.6 MB',
     duration: '12:05',
@@ -177,7 +178,6 @@ const SEED_MEDIA: MediaItem[] = [
     kind: '视频',
     summary: '服务团队奔赴用户现场，完成机组抢修与复产。',
     cover: '/av/frame-site.png',
-    coverFromFrame: true,
     fileName: 'service-72h.mp4',
     fileSize: '540.9 MB',
     duration: '10:16',
@@ -203,7 +203,6 @@ const SEED_MEDIA: MediaItem[] = [
     kind: '陕鼓之声',
     summary: '以振动分析为切口，讲述状态监测团队如何“听”出隐患。',
     cover: '/av/audio-story.png',
-    coverFromFrame: false,
     fileName: 'voice-043.mp3',
     fileSize: '21.4 MB',
     duration: '14:38',
@@ -225,17 +224,16 @@ const SEED_MEDIA: MediaItem[] = [
   },
   {
     id: 'AV-20260811-006',
-    title: '技能大赛决赛集锦（待处理）',
+    title: '技能大赛决赛集锦（待补封面）',
     kind: '视频',
-    summary: '决赛现场集锦，源文件较大，转码失败需重试。',
+    summary: '决赛现场集锦，视频已上传，封面待补充后即可发布。',
     cover: '',
-    coverFromFrame: false,
-    fileName: 'skill-final-raw.mov',
+    fileName: 'skill-final.mp4',
     fileSize: '1.6 GB',
-    duration: '—',
-    process: '处理失败',
-    failReason: '源文件音轨编码不受支持（pcm_s24le），转码中断',
-    retryCount: 1,
+    duration: '11:24',
+    process: '处理完成',
+    failReason: '',
+    retryCount: 0,
     status: '草稿',
     top: false,
     sort: 6,
@@ -255,7 +253,6 @@ const SEED_MEDIA: MediaItem[] = [
     kind: '视频',
     summary: '安全生产与信息安全专题，尚未上传媒体文件。',
     cover: '',
-    coverFromFrame: false,
     fileName: '',
     fileSize: '—',
     duration: '—',
@@ -488,7 +485,6 @@ export type MediaDraftInput = {
   kind: MediaKind
   summary: string
   cover: string
-  coverFromFrame: boolean
   fileName: string
   fileSize: string
   duration: string
@@ -508,7 +504,6 @@ export function createMediaItem(input: MediaDraftInput): MediaItem {
     kind: input.kind,
     summary: input.summary,
     cover: input.cover,
-    coverFromFrame: input.coverFromFrame,
     fileName: input.fileName,
     fileSize: input.fileSize || '—',
     duration: input.duration || '—',
@@ -540,17 +535,18 @@ export function updateMediaItem(id: string, patch: Partial<MediaItem>) {
   })
 }
 
-/** 发布前置校验：标题、媒体文件、转码结果与封面 */
+/** 发布前置校验：标题、媒体文件与封面；视频无转码环节，不校验处理状态 */
 function publishBlocker(m: MediaItem): string {
   if (!m.title.trim()) return '标题为空'
-  if (m.process === '待上传' || !m.fileName) return '尚未上传媒体文件'
-  if (m.process === '处理中') return '媒体文件仍在处理中，请稍后再发布'
-  if (m.process === '处理失败') return '媒体文件处理失败，请重试处理后再发布'
-  if (!m.cover) {
-    return m.kind === '视频'
-      ? '缺少封面（请重新截取视频第一帧）'
-      : '缺少封面（陕鼓之声需手动上传封面）'
+  if (!m.fileName) {
+    return m.kind === '视频' ? '尚未上传视频文件' : '尚未上传音频文件'
   }
+  if (needsProcess(m.kind)) {
+    if (m.process === '待上传') return '尚未上传音频文件'
+    if (m.process === '处理中') return '音频文件仍在处理中，请稍后再发布'
+    if (m.process === '处理失败') return '音频文件处理失败，请重试处理后再发布'
+  }
+  if (!m.cover) return '缺少封面（请先手动上传封面图）'
   return ''
 }
 
@@ -740,11 +736,20 @@ export function attachMediaFile(
   simulateProcess(id, Boolean(file.shouldFail))
 }
 
-/** 处理失败重试：重新提交转码任务 */
+/** 处理失败重试：重新提交处理任务，仅「陕鼓之声」有此环节 */
 export function retryProcess(ids: string[]): BatchResult[] {
   const results: BatchResult[] = []
   const media = state.media.map((m) => {
     if (!ids.includes(m.id)) return m
+    if (!needsProcess(m.kind)) {
+      results.push({
+        id: m.id,
+        label: m.title,
+        ok: false,
+        message: '视频无转码处理环节，无需重试',
+      })
+      return m
+    }
     if (m.process !== '处理失败') {
       results.push({
         id: m.id,
@@ -763,7 +768,7 @@ export function retryProcess(ids: string[]): BatchResult[] {
       ok: true,
       message: '已重新提交处理任务',
     })
-    // 重试后走成功分支，处理完成时视频自动补齐首帧封面
+    // 重试后走成功分支，封面仍需管理员手动上传
     window.setTimeout(() => {
       const target = getMediaItem(m.id)
       if (!target || target.process !== '处理中') return
@@ -771,8 +776,6 @@ export function retryProcess(ids: string[]): BatchResult[] {
         process: '处理完成',
         failReason: '',
         duration: target.duration === '—' ? '06:30' : target.duration,
-        cover: target.cover || (target.kind === '视频' ? '/av/frame-site.png' : ''),
-        coverFromFrame: target.kind === '视频' ? true : target.coverFromFrame,
       })
     }, 1600)
     return {

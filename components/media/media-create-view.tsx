@@ -38,6 +38,7 @@ export function MediaCreateView({
   const router = useRouter()
   const { role, allow } = useApp()
   const canPublish = allow('media.publish')
+  const isVideo = kind === '视频'
 
   const [values, setValues] = React.useState<MediaFormValues>({
     ...EMPTY_MEDIA_FORM,
@@ -51,7 +52,7 @@ export function MediaCreateView({
 
   function validate() {
     if (!values.title.trim()) {
-      toast.error(`请填写${kind === '视频' ? '视频' : '音频'}标题`)
+      toast.error(`请填写${isVideo ? '视频' : '音频'}标题`)
       return false
     }
     return true
@@ -70,20 +71,21 @@ export function MediaCreateView({
 
   function publish() {
     if (!validate()) return
-    if (values.process !== '处理完成') {
+    if (isVideo) {
+      if (!values.fileName) {
+        toast.error('请先上传 MP4 视频文件')
+        return
+      }
+    } else if (values.process !== '处理完成') {
       toast.error(
         values.process === '处理失败'
-          ? '媒体文件处理失败，请重试处理后再发布'
-          : '请先上传媒体文件并等待处理完成',
+          ? '音频文件处理失败，请重试处理后再发布'
+          : '请先上传音频文件并等待处理完成',
       )
       return
     }
     if (!values.cover) {
-      toast.error(
-        kind === '视频'
-          ? '发布前请重新截取视频第一帧作为封面'
-          : '发布前请手动上传“陕鼓之声”封面',
-      )
+      toast.error('发布前请先手动上传封面图')
       return
     }
     const item = createMediaItem({

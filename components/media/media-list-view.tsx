@@ -237,14 +237,17 @@ export function MediaListView({
             options={['全部状态', ...MEDIA_STATUSES]}
           />
         </FilterField>
-        <FilterField label="处理状态">
-          <NativeSelect
-            aria-label="处理状态"
-            value={process}
-            onChange={setProcess}
-            options={['全部处理状态', ...PROCESS_STATES]}
-          />
-        </FilterField>
+        {/* 视频无转码环节，不提供处理状态筛选 */}
+        {!isVideo && (
+          <FilterField label="处理状态">
+            <NativeSelect
+              aria-label="处理状态"
+              value={process}
+              onChange={setProcess}
+              options={['全部处理状态', ...PROCESS_STATES]}
+            />
+          </FilterField>
+        )}
         <FilterField label="创建人">
           <Input
             value={author}
@@ -274,7 +277,9 @@ export function MediaListView({
               onClick={() =>
                 ask(
                   '发布',
-                  '仅草稿可发布，需媒体处理完成且已有封面；发布后默认上架。请确认外部审批已完成。',
+                  isVideo
+                    ? '仅草稿可发布，需已上传视频且已有封面；发布后默认上架。请确认外部审批已完成。'
+                    : '仅草稿可发布，需音频处理完成且已有封面；发布后默认上架。请确认外部审批已完成。',
                   () => publishMedia(table.selected, role.person),
                 )
               }
@@ -331,18 +336,20 @@ export function MediaListView({
             <PinOff className="size-3.5" />
             取消置顶
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              ask('重试处理', '仅处理失败的媒体文件可重新提交转码处理。', () =>
-                retryProcess(table.selected),
-              )
-            }
-          >
-            <RefreshCcw className="size-3.5" />
-            重试处理
-          </Button>
+          {!isVideo && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                ask('重试处理', '仅处理失败的音频文件可重新提交处理。', () =>
+                  retryProcess(table.selected),
+                )
+              }
+            >
+              <RefreshCcw className="size-3.5" />
+              重试处理
+            </Button>
+          )}
           <Button
             size="sm"
             variant="outline"
@@ -355,9 +362,11 @@ export function MediaListView({
             <Trash2 className="size-3.5" />
             批量删除
           </Button>
-          <span className="ml-auto text-xs text-muted-foreground">
-            处理失败 {failedCount} 条 · 已选 {table.selected.length} 条
-          </span>
+          {!isVideo && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              处理失败 {failedCount} 条 · 已选 {table.selected.length} 条
+            </span>
+          )}
         </Toolbar>
 
         <Table className="text-[13px]">
@@ -373,7 +382,7 @@ export function MediaListView({
               </TableHead>
               <TableHead className="min-w-72">标题</TableHead>
               <TableHead className="w-20">时长</TableHead>
-              <TableHead className="w-28">处理状态</TableHead>
+              {!isVideo && <TableHead className="w-28">处理状态</TableHead>}
               <TableHead className="w-24">内容状态</TableHead>
               <TableHead className="w-24">是否置顶</TableHead>
               <TableHead className="w-24">创建人</TableHead>
@@ -396,7 +405,7 @@ export function MediaListView({
           <TableBody>
             {table.pageRows.length === 0 && (
               <TableEmpty
-                colSpan={14}
+                colSpan={isVideo ? 13 : 14}
                 text={`没有符合条件的${isVideo ? '视频' : '音频'}内容`}
               />
             )}
@@ -416,7 +425,7 @@ export function MediaListView({
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-10 w-16 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted text-muted-foreground">
                       {m.cover ? (
-                        // 封面可能为首帧截图（dataURL），统一用原生 img 渲染
+                        // 封面为手动上传（本地 blob 或静态图），统一用原生 img 渲染
                         <img
                           src={m.cover || '/placeholder.svg'}
                           alt={`${m.title}封面`}
@@ -441,9 +450,13 @@ export function MediaListView({
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {m.duration}
                 </TableCell>
-                <TableCell>
-                  <StatusTag tone={processTone(m.process)}>{m.process}</StatusTag>
-                </TableCell>
+                {!isVideo && (
+                  <TableCell>
+                    <StatusTag tone={processTone(m.process)}>
+                      {m.process}
+                    </StatusTag>
+                  </TableCell>
+                )}
                 <TableCell>
                   <StatusTag tone={statusTone(m.status)}>{m.status}</StatusTag>
                 </TableCell>
@@ -486,18 +499,20 @@ export function MediaListView({
                     >
                       <SquarePen />
                     </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      aria-label={`重试处理 ${m.title}`}
-                      disabled={m.process !== '处理失败'}
-                      onClick={() => {
-                        setResultAction('重试处理')
-                        setResults(retryProcess([m.id]))
-                      }}
-                    >
-                      <RefreshCcw />
-                    </Button>
+                    {!isVideo && (
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        aria-label={`重试处理 ${m.title}`}
+                        disabled={m.process !== '处理失败'}
+                        onClick={() => {
+                          setResultAction('重试处理')
+                          setResults(retryProcess([m.id]))
+                        }}
+                      >
+                        <RefreshCcw />
+                      </Button>
+                    )}
                     <Button
                       size="icon-sm"
                       variant="ghost"
@@ -537,7 +552,9 @@ export function MediaListView({
             {selectedRows.map((m) => (
               <li key={m.id} className="flex items-center gap-2 px-3 py-1.5">
                 <span className="min-w-0 flex-1 truncate">{m.title}</span>
-                <StatusTag tone={processTone(m.process)}>{m.process}</StatusTag>
+                {!isVideo && (
+                  <StatusTag tone={processTone(m.process)}>{m.process}</StatusTag>
+                )}
                 <StatusTag tone={statusTone(m.status)}>{m.status}</StatusTag>
               </li>
             ))}

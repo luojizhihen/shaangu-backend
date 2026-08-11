@@ -3,7 +3,6 @@
 import * as React from 'react'
 import {
   AudioLines,
-  Crop,
   FileVideo,
   ImagePlus,
   Loader2,
@@ -32,7 +31,6 @@ export type MediaFormValues = {
   kind: MediaKind
   summary: string
   cover: string
-  coverFromFrame: boolean
   fileName: string
   fileSize: string
   duration: string
@@ -47,7 +45,6 @@ export const EMPTY_MEDIA_FORM: MediaFormValues = {
   kind: '视频',
   summary: '',
   cover: '',
-  coverFromFrame: false,
   fileName: '',
   fileSize: '—',
   duration: '—',
@@ -57,62 +54,23 @@ export const EMPTY_MEDIA_FORM: MediaFormValues = {
   top: false,
 }
 
-/** 读取媒体时长；视频同时截取第一帧作为封面 */
-async function probeMedia(
-  file: File,
-  kind: MediaKind,
-): Promise<{ duration: string; frame: string }> {
+/** 读取媒体时长（视频不做转码，也不再截取首帧） */
+async function probeDuration(file: File, kind: MediaKind): Promise<string> {
   const url = URL.createObjectURL(file)
   try {
-    if (kind === '陕鼓之声') {
-      const audio = document.createElement('audio')
-      audio.preload = 'metadata'
-      audio.src = url
-      const seconds = await new Promise<number>((resolve, reject) => {
-        audio.onloadedmetadata = () => resolve(audio.duration)
-        audio.onerror = () => reject(new Error('音频解码失败'))
-        window.setTimeout(() => reject(new Error('读取音频信息超时')), 8000)
-      })
-      return { duration: formatDuration(seconds), frame: '' }
-    }
-
-    const video = document.createElement('video')
-    video.preload = 'auto'
-    video.muted = true
-    video.playsInline = true
-    video.src = url
+    const el =
+      kind === '陕鼓之声'
+        ? document.createElement('audio')
+        : document.createElement('video')
+    el.preload = 'metadata'
+    el.src = url
+    const label = kind === '陕鼓之声' ? '音频' : '视频'
     const seconds = await new Promise<number>((resolve, reject) => {
-      video.onloadeddata = () => resolve(video.duration)
-      video.onerror = () => reject(new Error('视频解码失败'))
-      window.setTimeout(() => reject(new Error('读取视频信息超时')), 10000)
+      el.onloadedmetadata = () => resolve(el.duration)
+      el.onerror = () => reject(new Error(`${label}解码失败`))
+      window.setTimeout(() => reject(new Error(`读取${label}信息超时`)), 10000)
     })
-
-    // 跳到起始位置后绘制首帧
-    await new Promise<void>((resolve) => {
-      const done = () => resolve()
-      video.onseeked = done
-      window.setTimeout(done, 2500)
-      try {
-        video.currentTime = Math.min(0.1, Math.max(0, video.duration - 0.05))
-      } catch {
-        done()
-      }
-    })
-
-    let frame = ''
-    try {
-      const canvas = document.createElement('canvas')
-      canvas.width = video.videoWidth || 1280
-      canvas.height = video.videoHeight || 720
-      const ctx = canvas.getContext('2d')
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-        frame = canvas.toDataURL('image/jpeg', 0.82)
-      }
-    } catch {
-      frame = ''
-    }
-    return { duration: formatDuration(seconds), frame }
+    return formatDuration(seconds)
   } finally {
     URL.revokeObjectURL(url)
   }
@@ -162,36 +120,43 @@ export function MediaForm({
   const isVideo = values.kind === '视频'
 
   async function process(file: File) {
+    // 视频为直传，无转码环节，仅读取时长
+    if (isVideo) {
+      if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') {
+        toast.error('视频仅支持 MP4 格式，请更换文件后重新上传')
+        return
+      }
+      onChange({
+        fileName: file.name,
+        fileSize: formatSize(file.size),
+        duration: '—',
+        process: '处理完成',
+        failReason: '',
+      })
+      try {
+        onChange({ duration: await probeDuration(file, '视频') })
+        toast.success('视频已上传')
+      } catch {
+        toast.success('视频已上传，未能读取时长')
+      }
+      return
+    }
+
     onChange({
       fileName: file.name,
       fileSize: formatSize(file.size),
       duration: '—',
       process: '处理中',
       failReason: '',
-      ...(isVideo ? { cover: '', coverFromFrame: false } : {}),
     })
     try {
-      const { duration, frame } = await probeMedia(file, values.kind)
-      if (isVideo) {
-        onChange({
-          duration,
-          process: '处理完成',
-          failReason: '',
-          cover: frame,
-          coverFromFrame: Boolean(frame),
-        })
-        toast.success(
-          frame ? '媒体处理完成，已自动截取第一帧作为封面' : '媒体处理完成，但首帧截取失败，请点击重新截取',
-        )
-        return
-      }
+      const duration = await probeDuration(file, '陕鼓之声')
       onChange({ duration, process: '处理完成', failReason: '' })
-      toast.success('媒体处理完成，请手动上传“陕鼓之声”封面')
+      toast.success('音频处理完成，请手动上传“陕鼓之声”封面')
     } catch (err) {
-      const reason =
-        err instanceof Error ? err.message : '媒体处理服务未返回结果'
-      onChange({ process: '处理失败', failReason: `${reason}，转码任务已中断` })
-      toast.error('媒体处理失败，可点击「重试处理」重新提交')
+      const reason = err instanceof Error ? err.message : '媒体处理服务未返回结果'
+      onChange({ process: '处理失败', failReason: reason })
+      toast.error('音频处理失败，可点击「重试处理」重新提交')
     }
   }
 
@@ -215,25 +180,10 @@ export function MediaForm({
     void process(fileRef.current)
   }
 
-  async function recapture() {
-    if (!isVideo) return
-    if (!fileRef.current) {
-      toast.error('原始视频已失效，请重新上传后再截取')
-      return
-    }
-    const { frame } = await probeMedia(fileRef.current, '视频')
-    if (!frame) {
-      toast.error('首帧截取失败，请确认视频文件是否可正常解码')
-      return
-    }
-    onChange({ cover: frame, coverFromFrame: true })
-    toast.success('已重新截取视频第一帧')
-  }
-
   function pickCover(files: FileList | null) {
     const file = files?.[0]
     if (!file) return
-    onChange({ cover: URL.createObjectURL(file), coverFromFrame: false })
+    onChange({ cover: URL.createObjectURL(file) })
     if (coverRef.current) coverRef.current.value = ''
     toast.success('封面已上传')
   }
@@ -252,22 +202,9 @@ export function MediaForm({
               />
             </FormRow>
 
-            <FormRow
-              label="视听类型"
-              required
-              hint={
-                isVideo
-                  ? '视频封面由系统自动截取第一帧，无需手动上传。'
-                  : '“陕鼓之声”为音频栏目，封面需手动上传。'
-              }
-            >
+            <FormRow label="视听类型" required>
               {kindLocked ? (
-                <div className="flex items-center gap-2">
-                  <StatusTag tone="info">{values.kind}</StatusTag>
-                  <span className="text-xs text-muted-foreground">
-                    类型由所在菜单入口决定，不支持切换
-                  </span>
-                </div>
+                <StatusTag tone="info">{values.kind}</StatusTag>
               ) : (
                 <NativeSelect
                   aria-label="视听类型"
@@ -278,7 +215,6 @@ export function MediaForm({
                     onChange({
                       kind,
                       cover: '',
-                      coverFromFrame: false,
                       fileName: '',
                       fileSize: '—',
                       duration: '—',
@@ -309,7 +245,7 @@ export function MediaForm({
           title={isVideo ? '视频文件' : '音频文件'}
           extra={
             <div className="flex items-center gap-2">
-              {values.process === '处理失败' && (
+              {!isVideo && values.process === '处理失败' && (
                 <Button size="xs" variant="outline" onClick={retry}>
                   <RefreshCcw className="size-3.5" />
                   重试处理
@@ -348,18 +284,20 @@ export function MediaForm({
                     {values.fileSize} · 时长 {values.duration}
                   </p>
                 </div>
-                <StatusTag tone={processTone(values.process)}>
-                  {values.process === '处理中' ? (
-                    <span className="flex items-center gap-1">
-                      <Loader2 className="size-3 animate-spin" />
-                      处理中
-                    </span>
-                  ) : (
-                    values.process
-                  )}
-                </StatusTag>
+                {!isVideo && (
+                  <StatusTag tone={processTone(values.process)}>
+                    {values.process === '处理中' ? (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="size-3 animate-spin" />
+                        处理中
+                      </span>
+                    ) : (
+                      values.process
+                    )}
+                  </StatusTag>
+                )}
               </div>
-              {values.process === '处理失败' && (
+              {!isVideo && values.process === '处理失败' && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/8 px-3 py-2 text-xs leading-relaxed text-destructive">
                   处理失败：{values.failReason || '媒体处理服务未返回结果'}。请点击「重试处理」，或更换源文件后重新上传。
                 </p>
@@ -377,13 +315,15 @@ export function MediaForm({
                 <AudioLines className="size-6" />
               )}
               <span className="text-[13px]">
-                点击上传{isVideo ? '视频文件（MP4 / MOV / AVI）' : '音频文件（MP3 / M4A / WAV）'}
+                点击上传{isVideo ? '视频文件（仅支持 MP4）' : '音频文件（MP3 / M4A / WAV）'}
               </span>
             </button>
           )}
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            上传后系统自动完成转码处理；处理完成才能发布或上架，处理失败可重试。
-          </p>
+          {!isVideo && (
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              上传后系统自动完成处理；处理完成才能发布或上架，处理失败可重试。
+            </p>
+          )}
         </Panel>
       </div>
 
@@ -391,26 +331,14 @@ export function MediaForm({
         <Panel
           title="封面"
           extra={
-            isVideo ? (
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={values.process !== '处理完成'}
-                onClick={() => void recapture()}
-              >
-                <Crop className="size-3.5" />
-                重新截取
-              </Button>
-            ) : (
-              <Button
-                size="xs"
-                variant="outline"
-                onClick={() => coverRef.current?.click()}
-              >
-                <Upload className="size-3.5" />
-                上传封面
-              </Button>
-            )
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => coverRef.current?.click()}
+            >
+              <Upload className="size-3.5" />
+              上传封面
+            </Button>
           }
         >
           <input
@@ -422,46 +350,42 @@ export function MediaForm({
           />
           {values.cover ? (
             <div className="relative aspect-video w-full max-w-80 overflow-hidden rounded-md border border-border">
-              {/* 首帧截图与本地上传均为 blob/dataURL，使用原生 img 渲染 */}
+              {/* 手动上传的封面为本地 blob，使用原生 img 渲染 */}
               <img
                 src={values.cover || '/placeholder.svg'}
                 alt={`${values.title || '视听内容'}封面`}
                 className="absolute inset-0 size-full object-cover"
               />
-              {!isVideo && (
-                <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-foreground/55 px-1.5 py-1">
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    className="h-6 text-surface hover:bg-surface/20 hover:text-surface"
-                    onClick={() => coverRef.current?.click()}
-                  >
-                    重新上传
-                  </Button>
-                  <Button
-                    size="icon-xs"
-                    variant="ghost"
-                    aria-label="删除封面"
-                    className="text-surface hover:bg-surface/20 hover:text-surface"
-                    onClick={() => onChange({ cover: '' })}
-                  >
-                    <Trash2 />
-                  </Button>
-                </div>
-              )}
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-foreground/55 px-1.5 py-1">
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  className="h-6 text-surface hover:bg-surface/20 hover:text-surface"
+                  onClick={() => coverRef.current?.click()}
+                >
+                  重新上传
+                </Button>
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  aria-label="删除封面"
+                  className="text-surface hover:bg-surface/20 hover:text-surface"
+                  onClick={() => onChange({ cover: '' })}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="flex aspect-video w-full max-w-80 flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground">
               <ImagePlus className="size-6" />
               <span className="px-4 text-center text-[13px] leading-relaxed">
-                {isVideo ? '上传视频后自动截取第一帧' : '请手动上传封面图'}
+                请手动上传封面图
               </span>
             </div>
           )}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {isVideo
-              ? '视频封面取自第一帧，可在处理完成后重新截取；无封面无法发布或上架。'
-              : '“陕鼓之声”封面需手动上传，建议 16:9；无封面无法发布或上架。'}
+            封面需手动上传，建议 16:9；无封面无法发布或上架。
           </p>
         </Panel>
 

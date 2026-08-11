@@ -73,7 +73,6 @@ export default function MediaDetailPage() {
       kind: target.kind,
       summary: target.summary,
       cover: target.cover,
-      coverFromFrame: target.coverFromFrame,
       fileName: target.fileName,
       fileSize: target.fileSize,
       duration: target.duration,
@@ -84,7 +83,7 @@ export default function MediaDetailPage() {
     })
   }, [id])
 
-  // 转码任务在后台异步完成，处理结果回填到表单
+  // 「陕鼓之声」处理任务在后台异步完成，处理结果回填到表单
   const processSnapshot = item
     ? `${item.process}|${item.duration}|${item.fileName}|${item.fileSize}|${item.failReason}|${item.cover}`
     : ''
@@ -101,7 +100,6 @@ export default function MediaDetailPage() {
             process: target.process,
             failReason: target.failReason,
             cover: target.cover || v.cover,
-            coverFromFrame: target.coverFromFrame || v.coverFromFrame,
           }
         : v,
     )
