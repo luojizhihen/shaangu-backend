@@ -155,7 +155,7 @@ export function NewsForm({
             onChange={(e) => pickCover(e.target.files)}
           />
           {values.cover ? (
-            <div className="relative aspect-[16/9] overflow-hidden rounded-md border border-border">
+            <div className="relative aspect-[16/9] w-full max-w-80 overflow-hidden rounded-md border border-border">
               {/* 本地上传得到的是 blob 地址，使用原生 img 直接渲染 */}
               <img
                 src={values.cover || '/placeholder.svg'}
@@ -186,7 +186,7 @@ export function NewsForm({
             <button
               type="button"
               onClick={() => coverRef.current?.click()}
-              className="flex aspect-[16/9] w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-brand"
+              className="flex aspect-[16/9] w-full max-w-80 flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground transition-colors hover:border-brand/50 hover:text-brand"
             >
               <ImagePlus className="size-6" />
               <span className="text-[13px]">点击上传封面图</span>

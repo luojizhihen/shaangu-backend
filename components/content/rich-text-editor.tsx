@@ -11,6 +11,7 @@ import {
   Link2,
   List,
   ListOrdered,
+  Pilcrow,
   Quote,
   Redo2,
   Type,
@@ -42,10 +43,11 @@ const TOOLS: { key: ToolKey; label: string; icon: React.ElementType }[] = [
   { key: 'italic', label: '斜体', icon: Italic },
   { key: 'underline', label: '下划线', icon: Underline },
   { key: 'h3', label: '小标题', icon: Type },
-  { key: 'paragraph', label: '正文段落', icon: AlignLeft },
+  { key: 'paragraph', label: '正文段落', icon: Pilcrow },
   { key: 'ul', label: '无序列表', icon: List },
   { key: 'ol', label: '有序列表', icon: ListOrdered },
   { key: 'quote', label: '引用', icon: Quote },
+  { key: 'left', label: '左对齐', icon: AlignLeft },
   { key: 'center', label: '居中对齐', icon: AlignCenter },
   { key: 'right', label: '右对齐', icon: AlignRight },
   { key: 'link', label: '插入链接', icon: Link2 },
@@ -69,6 +71,11 @@ export function RichTextEditor({
 }) {
   const ref = React.useRef<HTMLDivElement>(null)
   const [empty, setEmpty] = React.useState(true)
+
+  // 回车产生 <p> 而不是 <div>，与阅读端排版保持一致
+  React.useEffect(() => {
+    document.execCommand('defaultParagraphSeparator', false, 'p')
+  }, [])
 
   // 仅在外部值与编辑器内容不一致时回填，避免打断输入光标
   React.useEffect(() => {
