@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { BadgeCheck, Eye, EyeOff, RefreshCcw, Trash2 } from 'lucide-react'
+import { BadgeCheck, Eye, EyeOff, RefreshCcw } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -23,7 +23,6 @@ import {
   FORUM_VISIBILITIES,
   hideForumComments,
   restoreForumComments,
-  softDeleteForumComments,
   useForum,
   visibilityTone,
   type BatchResult,
@@ -41,8 +40,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 
-const LEVEL_OPTIONS = ['全部层级', '一级评论', '二级回复']
-
 function ForumCommentsView() {
   const pathname = usePathname()
   const router = useRouter()
@@ -56,23 +53,20 @@ function ForumCommentsView() {
   const [content, setContent] = React.useState('')
   const [person, setPerson] = React.useState('')
   const [type, setType] = React.useState('全部')
-  const [level, setLevel] = React.useState('全部层级')
   const [visibility, setVisibility] = React.useState('全部展示状态')
   const [query, setQuery] = React.useState({
     postTitle: fromPost,
     content: '',
     person: '',
     type: '全部',
-    level: '全部层级',
     visibility: '全部展示状态',
   })
 
   const [results, setResults] = React.useState<BatchResult[] | null>(null)
   const [resultAction, setResultAction] = React.useState('批量操作')
-  const [govern, setGovern] = React.useState<{
-    action: '隐藏' | '逻辑删除'
-    ids: string[]
-  } | null>(null)
+  const [govern, setGovern] = React.useState<{ action: '隐藏'; ids: string[] } | null>(
+    null,
+  )
 
   const rows = React.useMemo(
     () =>
@@ -82,12 +76,9 @@ function ForumCommentsView() {
         const kw = query.person.trim()
         const hitPerson = !kw || c.nickname.includes(kw) || c.author.includes(kw)
         const hitType = query.type === '全部' || c.postType === query.type
-        const hitLevel =
-          query.level === '全部层级' ||
-          (query.level === '二级回复' ? c.parentId !== null : c.parentId === null)
         const hitVisibility =
           query.visibility === '全部展示状态' || c.visibility === query.visibility
-        return hitPost && hitContent && hitPerson && hitType && hitLevel && hitVisibility
+        return hitPost && hitContent && hitPerson && hitType && hitVisibility
       }),
     [comments, query],
   )
@@ -95,7 +86,7 @@ function ForumCommentsView() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ postTitle, content, person, type, level, visibility })
+    setQuery({ postTitle, content, person, type, visibility })
     table.setPage(1)
   }
 
@@ -104,14 +95,12 @@ function ForumCommentsView() {
     setContent('')
     setPerson('')
     setType('全部')
-    setLevel('全部层级')
     setVisibility('全部展示状态')
     setQuery({
       postTitle: '',
       content: '',
       person: '',
       type: '全部',
-      level: '全部层级',
       visibility: '全部展示状态',
     })
   }
@@ -122,7 +111,7 @@ function ForumCommentsView() {
     table.clear()
   }
 
-  function askGovern(action: '隐藏' | '逻辑删除', ids: string[]) {
+  function askGovern(action: '隐藏', ids: string[]) {
     if (ids.length === 0) {
       toast.error('请先勾选需要处理的评论或回复')
       return
@@ -150,11 +139,8 @@ function ForumCommentsView() {
   const governTargets =
     govern?.ids.map((id) => {
       const c = comments.find((x) => x.id === id)
-      return c ? `${c.parentId ? '回复' : '评论'}：${c.content.slice(0, 30)}` : id
+      return c ? `${c.nickname}：${c.content.slice(0, 30)}` : id
     }) ?? []
-
-  const hiddenCount = comments.filter((c) => c.visibility === '已隐藏').length
-  const deletedCount = comments.filter((c) => c.visibility === '已删除').length
 
   return (
     <>
@@ -168,10 +154,6 @@ function ForumCommentsView() {
           </Button>
         }
       />
-
-      <p className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-        评论与回复仅支持隐藏、恢复与逻辑删除三类事后治理，不提供人工审核与物理删除。逻辑删除为软删除，原文与关联关系全部保留。
-      </p>
 
       <FilterBar onSearch={search} onReset={reset}>
         <FilterField label="所属内容">
@@ -190,14 +172,6 @@ function ForumCommentsView() {
             value={type}
             onChange={setType}
             options={['全部', ...FORUM_TYPES]}
-          />
-        </FilterField>
-        <FilterField label="评论层级">
-          <NativeSelect
-            aria-label="评论层级"
-            value={level}
-            onChange={setLevel}
-            options={LEVEL_OPTIONS}
           />
         </FilterField>
         <FilterField label="评论内容">
@@ -238,18 +212,6 @@ function ForumCommentsView() {
             <Eye className="size-3.5" />
             批量恢复
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => askGovern('逻辑删除', table.selected)}
-          >
-            <Trash2 className="size-3.5" />
-            批量逻辑删除
-          </Button>
-          <span className="ml-auto text-xs text-muted-foreground">
-            共 {comments.length} 条 · 已隐藏 {hiddenCount} 条 · 已逻辑删除 {deletedCount} 条
-            · 已选 {table.selected.length} 条
-          </span>
         </Toolbar>
 
         <Table className="text-[13px]">
@@ -263,15 +225,15 @@ function ForumCommentsView() {
                   onCheckedChange={(v) => table.togglePage(Boolean(v))}
                 />
               </TableHead>
-              <TableHead className="min-w-56">所属内容</TableHead>
-              <TableHead className="w-24">内容类型</TableHead>
-              <TableHead className="w-20">层级</TableHead>
-              <TableHead className="min-w-64">评论内容</TableHead>
-              <TableHead className="w-32">评论人</TableHead>
-              <TableHead className="w-28">所属部门</TableHead>
-              <TableHead className="w-44">评论时间</TableHead>
+              <TableHead className="w-44">所属内容</TableHead>
+              <TableHead className="w-20">内容类型</TableHead>
+              <TableHead>评论内容</TableHead>
+              <TableHead className="w-24">评论人昵称</TableHead>
+              <TableHead className="w-20">员工姓名</TableHead>
+              <TableHead className="w-24">所属部门</TableHead>
+              <TableHead className="w-28">评论时间</TableHead>
               <TableHead className="w-24">展示状态</TableHead>
-              <TableHead className="w-28 pr-4 text-center">操作</TableHead>
+              <TableHead className="w-20 pr-4 text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -298,7 +260,7 @@ function ForumCommentsView() {
                       type="button"
                       title={c.postTitle}
                       onClick={() => openPost(c.postId)}
-                      className="max-w-56 truncate text-left text-brand hover:underline"
+                      className="block w-40 truncate text-left text-brand hover:underline"
                     >
                       {c.postTitle}
                     </button>
@@ -308,10 +270,7 @@ function ForumCommentsView() {
                       {c.postType}
                     </StatusTag>
                   </TableCell>
-                  <TableCell>
-                    <StatusTag tone="neutral">{c.parentId ? '二级' : '一级'}</StatusTag>
-                  </TableCell>
-                  <TableCell>
+                  <TableCell className="min-w-48">
                     <span className="line-clamp-2 whitespace-normal">{c.content}</span>
                     {(c.hiddenReason || c.deletedReason) && (
                       <span className="mt-0.5 block text-xs text-muted-foreground">
@@ -322,15 +281,23 @@ function ForumCommentsView() {
                   <TableCell>
                     <span className="flex items-center gap-1">
                       {c.official && <BadgeCheck className="size-3.5 shrink-0 text-brand" />}
-                      <span className="truncate">{c.nickname}</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {c.author} · {c.personStatus}
+                      <span className="truncate" title={c.nickname}>
+                        {c.nickname}
+                      </span>
                     </span>
                   </TableCell>
+                  <TableCell>
+                    <span className="block truncate" title={c.author}>
+                      {c.author}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{c.personStatus}</span>
+                  </TableCell>
                   <TableCell className="text-muted-foreground">{c.dept}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {c.createdAt}
+                  <TableCell
+                    className="font-mono text-xs text-muted-foreground"
+                    title={c.createdAt}
+                  >
+                    {c.createdAt.slice(0, 10)}
                   </TableCell>
                   <TableCell>
                     <StatusTag tone={visibilityTone(c.visibility)}>
@@ -349,15 +316,6 @@ function ForumCommentsView() {
                         }
                       >
                         {hidden ? <Eye /> : <EyeOff />}
-                      </Button>
-                      <Button
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label="逻辑删除"
-                        disabled={deleted}
-                        onClick={() => askGovern('逻辑删除', [c.id])}
-                      >
-                        <Trash2 />
                       </Button>
                     </div>
                   </TableCell>
@@ -384,11 +342,7 @@ function ForumCommentsView() {
         targets={governTargets}
         onConfirm={(reason) => {
           if (!govern) return
-          const list =
-            govern.action === '隐藏'
-              ? hideForumComments(govern.ids, reason, actor)
-              : softDeleteForumComments(govern.ids, reason, actor)
-          show(govern.action, list)
+          show(govern.action, hideForumComments(govern.ids, reason, actor))
           setGovern(null)
         }}
       />
