@@ -515,7 +515,7 @@ const SEED_COMMENTS: ForumComment[] = [
   {
     id: 'FC-006',
     postId: 'FP-20260809-002',
-    postTitle: '通勤班车早班发车时间调整意见征集',
+    postTitle: '通勤班车早班发车���间调整意见征集',
     postType: '投票',
     parentId: 'FC-005',
     content: '东厂区接驳会一并纳入评估，投票截止后统一答复。',
@@ -1125,6 +1125,72 @@ export function createForumPoll(
     commit({})
   }
   return post
+}
+
+/* ---------------- 草稿发布 ---------------- */
+
+/**
+ * 发布已保存的草稿。仅草稿可发布，发布后即进入永久只读状态。
+ * 校验不通过时返回具体问题，不存在人工审核环节。
+ */
+export function publishForumDraft(
+  id: string,
+  actor: Actor,
+): { ok: boolean; message: string; issues: ValidationIssue[] } {
+  const post = state.posts.find((p) => p.id === id)
+  if (!post) return { ok: false, message: '未找到该内容', issues: [] }
+  if (post.status === '已发布') {
+    return { ok: false, message: '该内容已发布，发布后永久只读', issues: [] }
+  }
+
+  const issues =
+    post.type === '投票' && post.poll
+      ? validatePoll({
+          title: post.title,
+          body: post.body,
+          cover: post.cover,
+          mode: post.poll.mode,
+          optionMode: post.poll.optionMode,
+          deadline: post.poll.deadline,
+          options: post.poll.options.map((o) => ({
+            id: o.id,
+            label: o.label,
+            image: o.image,
+          })),
+          official: post.official,
+        })
+      : validatePost({
+          title: post.title,
+          body: post.body,
+          images: post.images,
+          official: post.official,
+        })
+
+  if (issues.length > 0) {
+    return { ok: false, message: `校验未通过，共 ${issues.length} 项需修改`, issues }
+  }
+
+  const ts = stamp()
+  log({
+    operator: actor.person,
+    role: actor.role,
+    objectType: post.type === '投票' ? '投票' : '帖子',
+    objectId: post.id,
+    objectSummary: post.title,
+    action: '直接发布',
+    reason: '草稿校验通过后直接发布',
+    before: '草稿',
+    after:
+      post.type === '投票'
+        ? '已发布（选项、单/多选、截止时间与结果锁定）'
+        : '已发布（发布后只读）',
+  })
+  commit({
+    posts: state.posts.map((p) =>
+      p.id === id ? { ...p, status: '已发布' as ForumStatus, publishedAt: ts } : p,
+    ),
+  })
+  return { ok: true, message: '已发布，内容进入永久只读状态', issues: [] }
 }
 
 /* ---------------- 帖子事后治理 ---------------- */

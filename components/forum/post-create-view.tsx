@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, ImagePlus, Lock, Save, Send, Trash2, X } from 'lucide-react'
+import { Eye, ImagePlus, Lock, Save, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -19,8 +19,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-
-void _unusedGovern
 
 const MAX_IMAGES = 9
 
