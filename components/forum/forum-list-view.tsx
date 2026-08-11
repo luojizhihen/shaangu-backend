@@ -169,6 +169,16 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
     show('恢复显示', restoreForumPosts(ids, actor))
   }
 
+  /** 管理端发布的内容直接归属当前登录账号，官方身份仍显示官方昵称 */
+  function displayNickname(p: ForumPost) {
+    if (p.source !== '管理端发布') return p.nickname
+    return p.official ? p.nickname : role.person
+  }
+
+  function displayAuthor(p: ForumPost) {
+    return p.source === '管理端发布' ? role.person : p.author
+  }
+
   function detailHref(p: ForumPost) {
     return p.type === '投票' ? `/forum/polls/${p.id}` : `/forum/posts/${p.id}`
   }
@@ -213,10 +223,12 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
         }
       />
 
-      <p className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-        <Lock className="mt-0.5 size-3.5 shrink-0" />
-        已发布内容永久只读，不提供编辑、保存修改、撤回发布或退回草稿；投票发布后选项、单/多选、截止时间与结果全部锁定。事后治理仅支持隐藏、恢复、逻辑删除（软删除，保留原始内容与互动数据）、置顶、取消置顶与官方回复。
-      </p>
+      {isPoll && (
+        <p className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
+          <Lock className="mt-0.5 size-3.5 shrink-0" />
+          已发布内容永久只读，不提供编辑、保存修改、撤回发布或退回草稿；投票发布后选项、单/多选、截止时间与结果全部锁定。事后治理仅支持隐藏、恢复、逻辑删除（软删除，保留原始内容与互动数据）、置顶、取消置顶与官方回复。
+        </p>
+      )}
 
       <FilterBar onSearch={search} onReset={reset}>
         <FilterField label="标题">
@@ -318,10 +330,12 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
             <Trash2 className="size-3.5" />
             批量逻辑删除
           </Button>
-          <span className="ml-auto text-xs text-muted-foreground">
-            共 {scoped.length} 条 · 已发布 {publishedCount} 条 · 已隐藏 {hiddenCount} 条 ·
-            已逻辑删除 {deletedCount} 条 · 已选 {table.selected.length} 条
-          </span>
+          {isPoll && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              共 {scoped.length} 条 · 已发布 {publishedCount} 条 · 已隐藏 {hiddenCount} 条
+              · 已逻辑删除 {deletedCount} 条 · 已选 {table.selected.length} 条
+            </span>
+          )}
         </Toolbar>
 
         <Table className="text-[13px]">
@@ -338,7 +352,14 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
               <TableHead className="min-w-72">标题</TableHead>
               {!isPoll && <TableHead className="w-24">内容类型</TableHead>}
               <TableHead className="w-28">发布来源</TableHead>
-              <TableHead className="w-32">发帖人</TableHead>
+              {isPoll ? (
+                <TableHead className="w-32">发帖人</TableHead>
+              ) : (
+                <>
+                  <TableHead className="w-32">发帖人昵称</TableHead>
+                  <TableHead className="w-28">发帖人姓名</TableHead>
+                </>
+              )}
               <TableHead className="w-24">发布状态</TableHead>
               <TableHead className="w-24">展示状态</TableHead>
               <TableHead className="w-20">置顶</TableHead>
@@ -354,7 +375,7 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
           <TableBody>
             {table.pageRows.length === 0 && (
               <TableEmpty
-                colSpan={isPoll ? 13 : 14}
+                colSpan={isPoll ? 13 : 15}
                 text={isPoll ? '没有符合条件的投票内容' : '没有符合条件的帖子'}
               />
             )}
@@ -412,14 +433,32 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
                       {p.source}
                     </StatusTag>
                   </TableCell>
-                  <TableCell>
-                    <span className="block truncate" title={`${p.nickname} / ${p.author}`}>
-                      {p.nickname}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {p.author} · {p.dept}
-                    </span>
-                  </TableCell>
+                  {isPoll ? (
+                    <TableCell>
+                      <span
+                        className="block truncate"
+                        title={`${p.nickname} / ${p.author}`}
+                      >
+                        {p.nickname}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {p.author} · {p.dept}
+                      </span>
+                    </TableCell>
+                  ) : (
+                    <>
+                      <TableCell>
+                        <span className="block truncate" title={displayNickname(p)}>
+                          {displayNickname(p)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="block truncate" title={displayAuthor(p)}>
+                          {displayAuthor(p)}
+                        </span>
+                      </TableCell>
+                    </>
+                  )}
                   <TableCell>
                     <StatusTag tone={statusTone(p.status)}>{p.status}</StatusTag>
                   </TableCell>

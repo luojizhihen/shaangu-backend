@@ -21,7 +21,7 @@ import {
   StatusTag,
 } from '@/components/layout/page-frame'
 import { RichTextEditor } from '@/components/content/rich-text-editor'
-import { PublishConfirmDialog, ValidationNotice } from '@/components/forum/forum-dialogs'
+import { PublishConfirmDialog } from '@/components/forum/forum-dialogs'
 import {
   createForumPoll,
   validatePoll,
@@ -384,23 +384,6 @@ export function PollCreateView() {
                 onChange={(e) => setDeadline(e.target.value)}
               />
             </div>
-          </Panel>
-
-          <Panel title="校验结果">
-            <ValidationNotice issues={issues ?? []} checked={issues !== null} />
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-3 w-full"
-              onClick={() => {
-                const found = runCheck()
-                toast[found.length === 0 ? 'success' : 'error'](
-                  found.length === 0 ? '校验通过' : `校验未通过，共 ${found.length} 项`,
-                )
-              }}
-            >
-              执行必填、格式与敏感词校验
-            </Button>
           </Panel>
 
           <Panel title="发布信息">
