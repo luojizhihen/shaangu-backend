@@ -213,6 +213,194 @@ export const SYSTEM_STATUS = [
   },
 ]
 
+/* ---------------- 运营数据（/analytics）筛选维度与指标 ---------------- */
+
+export const COMPANIES = [
+  '全部公司',
+  '陕鼓集团本部',
+  '陕鼓动力',
+  '陕鼓能源',
+  '陕鼓智能装备',
+  '陕鼓服务',
+]
+
+export const DEPT_LIST = [
+  '全部部门',
+  '透平机械',
+  '能源工程',
+  '智能装备',
+  '党群工作部',
+  '信息管理部',
+  '工会办公室',
+  '融媒运营组',
+  '运营服务组',
+]
+
+export const PEOPLE = [
+  '全部人员',
+  '李雯',
+  '赵启明',
+  '陈锐',
+  '刘思远',
+  '孙可',
+  '周敬',
+  '王海涛',
+]
+
+export const CONTENT_CATEGORIES = [
+  '全部类目',
+  '要闻',
+  '通知',
+  '奋斗者',
+  '内刊',
+  '学习',
+  '党建',
+]
+
+export const CONTENT_TYPES = ['全部类型', '资讯', '视频', '音频', '帖子']
+
+export const TIME_PRESETS = ['今日', '近 7 天', '近 30 天', '本季度', '自定义']
+
+/** 指标口径说明：每个指标都要能说明清楚怎么算、数据来自哪里、什么时候更新 */
+export type MetricDef = {
+  caliber: string
+  source: string
+  updatedAt: string
+}
+
+export const METRIC_DEFS: Record<string, MetricDef> = {
+  阅读互动趋势: {
+    caliber:
+      '阅读量按“同一用户同一内容同一天只计 1 次”去重统计；互动量为点赞数与评论数之和，评论以审核通过为准。',
+    source: '移动端埋点日志 + 内容中心业务库',
+    updatedAt: '2026-08-11 08:30',
+  },
+  积分获取与消耗: {
+    caliber:
+      '获取为规则生效期内实际入账积分，含浏览、点赞、评论、签到；消耗为商城下单占用积分，订单取消后回退不计入消耗。',
+    source: '积分中心流水表（按自然月归集）',
+    updatedAt: '2026-08-11 06:00',
+  },
+  员工变化: {
+    caliber:
+      '在册人数为月末在职员工数（不含退休）；入职与离职按用友 NC 生效日期归属月份，同月入职又离职的计双向各 1 次。',
+    source: '用友 NC 每日定时同步批次',
+    updatedAt: '2026-08-11 02:14',
+  },
+  部门积分: {
+    caliber:
+      '部门积分为该部门在册员工获取积分合计，按员工当前所属部门归集，历史调岗不追溯。',
+    source: '积分中心 + 部门主数据',
+    updatedAt: '2026-08-11 06:00',
+  },
+  内容排行: {
+    caliber:
+      '按筛选区间内的阅读（播放）量倒序排列，资讯与视听分别去重后合并展示；下架内容不参与排行。',
+    source: '内容中心 + 埋点日志',
+    updatedAt: '2026-08-11 08:30',
+  },
+  论坛治理: {
+    caliber:
+      '敏感词命中按“提交时命中即计 1 次”统计；删除含管理员删除与作者自删；申诉为用户对处理结果发起的复核请求。',
+    source: '论坛业务库 + 敏感词引擎日志',
+    updatedAt: '2026-08-11 08:00',
+  },
+  反馈闭环率: {
+    caliber:
+      '闭环率 = 当月已回复且状态为已办结的反馈数 ÷ 当月新增反馈数；跨月办结计入反馈提交当月。',
+    source: '运营服务反馈工单表',
+    updatedAt: '2026-08-11 08:30',
+  },
+}
+
+/** 员工变化（月） */
+export const STAFF_TREND = [
+  { month: '3月', 在册: 7248, 入职: 62, 离职: 41 },
+  { month: '4月', 在册: 7286, 入职: 71, 离职: 33 },
+  { month: '5月', 在册: 7301, 入职: 48, 离职: 33 },
+  { month: '6月', 在册: 7330, 入职: 66, 离职: 37 },
+  { month: '7月', 在册: 7352, 入职: 59, 离职: 37 },
+  { month: '8月', 在册: 7318, 入职: 21, 离职: 55 },
+]
+
+/** 内容排行（支持类目与内容类型筛选、可下钻到对应业务页） */
+export type ContentRankRow = {
+  title: string
+  type: '资讯' | '视频' | '音频' | '帖子'
+  category: string
+  dept: string
+  reads: number
+  interactions: number
+  points: number
+  target: string
+  perm: string
+}
+
+export const CONTENT_RANK: ContentRankRow[] = [
+  { title: '集团召开数字化建设专题推进会', type: '资讯', category: '要闻', dept: '党群工作部', reads: 4210, interactions: 682, points: 8420, target: '/content/news', perm: 'content.news' },
+  { title: '关于开展年度信息安全培训的通知', type: '资讯', category: '通知', dept: '信息管理部', reads: 3860, interactions: 415, points: 7720, target: '/content/news', perm: 'content.news' },
+  { title: '大型能量转换设备智能运维实践', type: '视频', category: '学习', dept: '透平机械', reads: 3240, interactions: 596, points: 6480, target: '/media/list', perm: 'media.list' },
+  { title: '奋斗者｜十年磨一“机”', type: '资讯', category: '奋斗者', dept: '透平机械', reads: 3120, interactions: 728, points: 6240, target: '/content/news', perm: 'content.news' },
+  { title: '陕鼓之声｜向上向善 优良风气创未来', type: '音频', category: '党建', dept: '党群工作部', reads: 2870, interactions: 342, points: 5740, target: '/media/list', perm: 'media.list' },
+  { title: '内刊 2026 年第 7 期上线', type: '资讯', category: '内刊', dept: '融媒运营组', reads: 2480, interactions: 268, points: 4960, target: '/content/news', perm: 'content.news' },
+  { title: '一线技改金点子征集讨论', type: '帖子', category: '学习', dept: '智能装备', reads: 2360, interactions: 914, points: 4720, target: '/forum/posts', perm: 'forum.posts' },
+  { title: '分布式能源示范项目纪实', type: '视频', category: '要闻', dept: '能源工程', reads: 2160, interactions: 331, points: 4320, target: '/media/list', perm: 'media.list' },
+  { title: '学习｜能源系统节能技术要点', type: '资讯', category: '学习', dept: '能源工程', reads: 2210, interactions: 297, points: 4420, target: '/content/news', perm: 'content.news' },
+  { title: '食堂菜品建议征集', type: '帖子', category: '通知', dept: '工会办公室', reads: 1980, interactions: 1024, points: 3960, target: '/forum/posts', perm: 'forum.posts' },
+]
+
+/** 论坛治理数据（月） */
+export const FORUM_GOVERNANCE = [
+  { month: '3月', 新增帖子: 412, 新增评论: 2860, 敏感词命中: 96, 删除: 34, 申诉: 8 },
+  { month: '4月', 新增帖子: 448, 新增评论: 3120, 敏感词命中: 88, 删除: 29, 申诉: 6 },
+  { month: '5月', 新增帖子: 476, 新增评论: 3348, 敏感词命中: 104, 删除: 41, 申诉: 11 },
+  { month: '6月', 新增帖子: 459, 新增评论: 3204, 敏感词命中: 79, 删除: 26, 申诉: 5 },
+  { month: '7月', 新增帖子: 502, 新增评论: 3592, 敏感词命中: 112, 删除: 38, 申诉: 9 },
+  { month: '8月', 新增帖子: 186, 新增评论: 1284, 敏感词命中: 37, 删除: 12, 申诉: 3 },
+]
+
+/** 反馈闭环率（月） */
+export const FEEDBACK_CLOSURE = [
+  { month: '3月', 新增: 86, 办结: 79, 闭环率: 91.9 },
+  { month: '4月', 新增: 94, 办结: 88, 闭环率: 93.6 },
+  { month: '5月', 新增: 102, 办结: 91, 闭环率: 89.2 },
+  { month: '6月', 新增: 88, 办结: 84, 闭环率: 95.5 },
+  { month: '7月', 新增: 110, 办结: 99, 闭环率: 90.0 },
+  { month: '8月', 新增: 42, 办结: 33, 闭环率: 78.6 },
+]
+
+/** 异步导出任务（大数据量导出时进入队列） */
+export type ExportTask = {
+  id: string
+  name: string
+  rows: number
+  state: '排队中' | '生成中' | '可下载' | '已失败'
+  progress: number
+  operator: string
+  createdAt: string
+}
+
+export const EXPORT_TASKS: ExportTask[] = [
+  {
+    id: 'EXP-20260811-0032',
+    name: '内容排行明细_全部公司_2026-07-01至2026-07-31',
+    rows: 18640,
+    state: '可下载',
+    progress: 100,
+    operator: '张亦驰',
+    createdAt: '2026-08-11 08:12',
+  },
+  {
+    id: 'EXP-20260811-0031',
+    name: '积分流水明细_陕鼓动力_2026-08-01至2026-08-11',
+    rows: 42180,
+    state: '生成中',
+    progress: 64,
+    operator: '孙可',
+    createdAt: '2026-08-11 08:04',
+  },
+]
+
 export const NOTICES = [
   { title: 'NC 同步异常 3 条待处理', time: '02:14' },
   { title: '待领取订单已达 28 笔', time: '昨天 16:05' },
