@@ -23,6 +23,7 @@
   --color-ring: var(--ring);
 
   --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
   --color-brand-deep: var(--brand-deep);
   --color-brand-green: var(--brand-green);
   --color-warning: var(--warning);
@@ -56,6 +57,7 @@
   color-scheme: light;
 
   --brand: #014081;
+  --brand-foreground: #ffffff;
   --brand-deep: #06356b;
   --brand-green: #008361;
   --warning: #b7791f;

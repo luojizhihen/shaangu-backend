@@ -23,7 +23,7 @@ export function AppTopbar() {
   const { role, roleKey, setRoleKey, signOut } = useApp()
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-3 bg-brand px-4 text-white">
+    <header className="flex h-14 shrink-0 items-center gap-3 bg-nav px-4 text-nav-foreground">
       <div className="flex-1" />
 
       {/* 消息 */}
