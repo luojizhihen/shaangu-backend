@@ -26,6 +26,9 @@ export type MessageAudience = 'APP' | '管理端后台'
 /** APP 侧的员工范围；管理端后台不适用，固定为空 */
 export type MessageScope = '全部' | '在职员工' | '退休员工' | '选择员工'
 
+/** 管理端后台的接收范围：全部管理员，或指定后台用户 */
+export type AdminScope = '全部' | '选择用户'
+
 /** 待发送可编辑可删除；已发送只读留痕 */
 export type MessageStatus = '待发送' | '已发送'
 
@@ -49,11 +52,28 @@ export type Employee = {
   status: EmployeeStatus
 }
 
-/** 发送明细：一条消息发给一名员工的投递结果 */
-export type DeliveryRecord = {
-  employeeNo: string
+/** 后台用户名册，供管理端后台的「选择用户」弹窗使用 */
+export type AdminUser = {
+  id: string
+  /** 用户账号 */
+  account: string
+  /** 用户姓名 */
   name: string
-  company: string
+  /** 用户部门 */
+  dept: string
+  /** 所属角色 */
+  role: string
+}
+
+/**
+ * 发送明细：一条消息发给一名接收人的投递结果。
+ * APP 侧 no/org 为员工工号与公司，管理端后台为用户账号与角色。
+ */
+export type DeliveryRecord = {
+  key: string
+  no: string
+  name: string
+  org: string
   dept: string
   /** 该条投递的发送时间 */
   sentAt: string
@@ -71,6 +91,10 @@ export type OpsMessage = {
   scope: MessageScope | ''
   /** 范围为「选择员工」时的员工 id 列表，其他范围为空 */
   employeeIds: string[]
+  /** 接收端为管理端后台时的用户范围；APP 为空 */
+  adminScope: AdminScope | ''
+  /** 范围为「选择用户」时的后台用户 id 列表，其他范围为空 */
+  adminUserIds: string[]
   title: string
   content: string
   status: MessageStatus
@@ -124,6 +148,7 @@ export const MESSAGE_SCOPES: MessageScope[] = [
   '退休员工',
   '选择员工',
 ]
+export const ADMIN_SCOPES: AdminScope[] = ['全部', '选择用户']
 export const EMPLOYEE_STATUSES: EmployeeStatus[] = ['在职', '退休']
 export const MESSAGE_STATUSES: MessageStatus[] = ['待发送', '已发送']
 export const CLEAR_TEMPLATES: ClearTemplate[] = ['提前 30 天', '提前 7 天']
@@ -167,8 +192,27 @@ const SCOPE_SIZE: Record<MessageScope, number> = {
   选择员工: 0,
 }
 
-/** 管理端后台的接收人数（管理员账号数） */
-const ADMIN_SIZE = 12
+/**
+ * 后台用户名册（原型样本）。真实环境取自系统管理的用户列表，
+ * 此处样本用于「选择用户」弹窗与管理端后台的发送明细展示。
+ */
+export const ADMIN_USERS: AdminUser[] = [
+  { id: 'U-01', account: 'admin', name: '张亦驰', dept: '平台管理部', role: '超级管理员' },
+  { id: 'U-02', account: 'admin.normal', name: '王海涛', dept: '平台管理部', role: '普通管理员' },
+  { id: 'U-03', account: 'admin.news', name: '李雯', dept: '党群工作部', role: '资讯管理员' },
+  { id: 'U-04', account: 'admin.media', name: '孙可', dept: '党群工作部', role: '视听管理员' },
+  { id: 'U-05', account: 'admin.publish', name: '周敬', dept: '信息安全部', role: '发布审核员' },
+  { id: 'U-06', account: 'admin.forum', name: '许沐', dept: '工会办公室', role: '论坛管理员' },
+  { id: 'U-07', account: 'admin.points', name: '赵越', dept: '工会办公室', role: '积分管理员' },
+  { id: 'U-08', account: 'admin.ops', name: '钱思远', dept: '运维服务中心', role: '运营管理员' },
+  { id: 'U-09', account: 'admin.hr', name: '汪筱', dept: '人力资源部', role: '普通管理员' },
+  { id: 'U-10', account: 'admin.union', name: '鹿鸣', dept: '工会办公室', role: '普通管理员' },
+  { id: 'U-11', account: 'admin.audit', name: '陆东南', dept: '审计监察部', role: '发布审核员' },
+  { id: 'U-12', account: 'admin.it', name: '李鸣泉', dept: '运维服务中心', role: '运营管理员' },
+]
+
+/** 后台角色清单，供「选择用户」弹窗按角色筛选 */
+export const ADMIN_ROLE_NAMES = Array.from(new Set(ADMIN_USERS.map((u) => u.role)))
 
 /** 年度清零两种模板的默认文案，选中模板后自动填入且允许微调 */
 export const CLEAR_TEMPLATE_TEXT: Record<
@@ -197,6 +241,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '全部',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '年度积分清零提醒（30 天）',
     content: CLEAR_TEMPLATE_TEXT['提前 30 天'].content,
     status: '待发送',
@@ -215,6 +261,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '在职员工',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '陕鼓 55 周年主题征文开启',
     content:
       '陕鼓 55 周年主题征文即日起开放投稿，可在论坛「官方话题」下参与，入选稿件将在资讯栏目展示。',
@@ -234,6 +282,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: '管理端后台',
     scope: '',
     employeeIds: [],
+    adminScope: '全部',
+    adminUserIds: [],
     title: '待办提醒：3 条兑换订单待确认领取',
     content:
       '积分商城当前有 3 条订单处于「待领取」，请联系员工核对后在订单管理中确认领取。',
@@ -253,6 +303,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '选择员工',
     employeeIds: ['E-01'],
+    adminScope: '',
+    adminUserIds: [],
     title: '积分到账提醒',
     content:
       '您因「评论（审核通过）」获得 2 积分，当前可用积分 386。积分明细可在个人中心查看。',
@@ -272,6 +324,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '全部',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '平台维护通知',
     content:
       '平台将于 2026-08-12 22:00 至 23:00 进行例行维护，期间资讯浏览与积分兑换可能短暂不可用。',
@@ -291,6 +345,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '在职员工',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '积分商城上新：富光×陕鼓 55 周年保温杯',
     content:
       '积分商城已上新「富光×陕鼓55周年保温杯」，所需积分 2000，每人每半年可兑换 1 个，先兑先得。',
@@ -310,12 +366,14 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: '管理端后台',
     scope: '',
     employeeIds: [],
+    adminScope: '选择用户',
+    adminUserIds: ['U-01', 'U-02', 'U-08'],
     title: '待办提醒：5 条意见反馈待回复',
     content: '意见反馈中有 5 条处于「待回复」，请及时进入意见反馈管理处理。',
     status: '已发送',
     origin: '系统自动',
     clearTemplate: '',
-    recipients: 12,
+    recipients: 3,
     createdAt: '2026-08-04 09:00:00',
     creator: '系统',
     sentAt: '2026-08-04 09:00:00',
@@ -328,6 +386,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '选择员工',
     employeeIds: ['E-03'],
+    adminScope: '',
+    adminUserIds: [],
     title: '积分扣减提醒',
     content:
       '您兑换「天堂307E升级黑胶伞」扣减 2000 积分，当前可用积分 430。请留意领取通知。',
@@ -347,6 +407,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '全部',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '年度积分清零提醒（7 天）',
     content:
       '您的 2025 年度积分将于 2025-12-31 24:00 统一清零，距清零仅剩 7 天。请尽快前往积分商城完成兑换，清零后积分不再保留、不可恢复。',
@@ -366,6 +428,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: 'APP',
     scope: '全部',
     employeeIds: [],
+    adminScope: '',
+    adminUserIds: [],
     title: '年度积分清零提醒（30 天）',
     content:
       '您的 2025 年度积分将于 2025-12-31 24:00 统一清零，距清零还有 30 天。请提前前往积分商城完成兑换，清零后积分不再保留、不可恢复。',
@@ -385,13 +449,15 @@ const SEED_MESSAGES: OpsMessage[] = [
     audience: '管理端后台',
     scope: '',
     employeeIds: [],
+    adminScope: '全部',
+    adminUserIds: [],
     title: '年度清零任务已就绪',
     content:
       '2025 年度积分清零任务将于 2025-12-31 24:00 自动执行，执行前请确认积分商城库存与订单已处理完毕。',
     status: '已发送',
     origin: '系统自动',
     clearTemplate: '',
-    recipients: 11,
+    recipients: 12,
     createdAt: '2025-11-30 09:00:00',
     creator: '系统',
     sentAt: '2025-11-30 09:00:00',
@@ -609,9 +675,16 @@ export function audienceTone(a: MessageAudience) {
   return a === 'APP' ? ('info' as const) : ('neutral' as const)
 }
 
-/** 接收范围的展示文案，如「APP · 在职员工」「APP · 选择员工（2 人）」 */
+/**
+ * 接收范围的展示文案，如「在职员工」「选择员工（2 人）」；
+ * 管理端后台则为「全部管理员」或「选择用户（3 人）」。
+ */
 export function scopeText(m: OpsMessage) {
-  if (m.audience === '管理端后台') return '管理端后台'
+  if (m.audience === '管理端后台') {
+    if (m.adminScope === '选择用户')
+      return `选择用户（${m.adminUserIds.length} 人）`
+    return '全部管理员'
+  }
   if (m.scope === '选择员工') return `选择员工（${m.employeeIds.length} 人）`
   return m.scope || '全部'
 }
@@ -629,30 +702,54 @@ export function resolveEmployees(
   return EMPLOYEES
 }
 
-/** 待发送消息的预计接收人数；选择员工按实际勾选数计算 */
+/** 按管理端范围解析命中的后台用户名册 */
+export function resolveAdminUsers(
+  adminScope: AdminScope | '',
+  adminUserIds: string[],
+): AdminUser[] {
+  if (adminScope === '选择用户')
+    return ADMIN_USERS.filter((u) => adminUserIds.includes(u.id))
+  return ADMIN_USERS
+}
+
+/** 待发送消息的预计接收人数；选择员工/选择用户按实际勾选数计算 */
 export function plannedRecipients(
   audience: MessageAudience,
   scope: MessageScope | '',
   employeeIds: string[],
+  adminScope: AdminScope | '' = '',
+  adminUserIds: string[] = [],
 ) {
-  if (audience === '管理端后台') return ADMIN_SIZE
+  if (audience === '管理端后台')
+    return adminScope === '选择用户' ? adminUserIds.length : ADMIN_USERS.length
   if (scope === '选择员工') return employeeIds.length
   return SCOPE_SIZE[(scope || '全部') as MessageScope]
 }
 
 /**
- * 发送明细：按接收范围列出每名员工的投递结果。
+ * 发送明细：按接收范围列出每名接收人的投递结果。
  * 原型下以名册样本演示，真实环境由推送网关回执生成。
  */
 export function deliveryRecords(m: OpsMessage): DeliveryRecord[] {
   if (m.status !== '已发送') return []
+  // 原型下固定第 7 条演示失败回执，便于查看失败态
+  if (m.audience === '管理端后台')
+    return resolveAdminUsers(m.adminScope, m.adminUserIds).map((u, i) => ({
+      key: u.id,
+      no: u.account,
+      name: u.name,
+      org: u.role,
+      dept: u.dept,
+      sentAt: m.sentAt,
+      success: i !== 6,
+    }))
   return resolveEmployees(m.audience, m.scope, m.employeeIds).map((e, i) => ({
-    employeeNo: e.no,
+    key: e.id,
+    no: e.no,
     name: e.name,
-    company: e.company,
+    org: e.company,
     dept: e.dept,
     sentAt: m.sentAt,
-    // 原型下固定第 7 条演示失败回执，便于查看失败态
     success: i !== 6,
   }))
 }
@@ -668,6 +765,8 @@ export type MessageDraft = {
   audience: MessageAudience
   scope: MessageScope | ''
   employeeIds: string[]
+  adminScope: AdminScope | ''
+  adminUserIds: string[]
   title: string
   content: string
   clearTemplate: ClearTemplate | ''
@@ -678,6 +777,8 @@ export const EMPTY_MESSAGE_DRAFT: MessageDraft = {
   audience: 'APP',
   scope: '全部',
   employeeIds: [],
+  adminScope: '',
+  adminUserIds: [],
   title: '',
   content: '',
   clearTemplate: '',
@@ -705,6 +806,10 @@ export function validateMessage(draft: MessageDraft): string[] {
     if (!draft.scope) issues.push('接收端为 APP 时需选择员工范围')
     else if (draft.scope === '选择员工' && draft.employeeIds.length === 0)
       issues.push('请至少选择一名员工')
+  } else {
+    if (!draft.adminScope) issues.push('接收端为管理端后台时需选择用户范围')
+    else if (draft.adminScope === '选择用户' && draft.adminUserIds.length === 0)
+      issues.push('请至少选择一名后台用户')
   }
 
   return issues
@@ -719,6 +824,11 @@ export function createMessage(draft: MessageDraft, operator: string) {
     scope: draft.audience === 'APP' ? draft.scope : '',
     employeeIds:
       draft.audience === 'APP' && draft.scope === '选择员工' ? draft.employeeIds : [],
+    adminScope: draft.audience === '管理端后台' ? draft.adminScope : '',
+    adminUserIds:
+      draft.audience === '管理端后台' && draft.adminScope === '选择用户'
+        ? draft.adminUserIds
+        : [],
     title: draft.title.trim(),
     content: draft.content.trim(),
     status: '待发送',
@@ -753,6 +863,11 @@ export function updateMessage(id: string, draft: MessageDraft) {
               draft.audience === 'APP' && draft.scope === '选择员工'
                 ? draft.employeeIds
                 : [],
+            adminScope: draft.audience === '管理端后台' ? draft.adminScope : '',
+            adminUserIds:
+              draft.audience === '管理端后台' && draft.adminScope === '选择用户'
+                ? draft.adminUserIds
+                : [],
             title: draft.title.trim(),
             content: draft.content.trim(),
             clearTemplate: draft.type === '年度清零' ? draft.clearTemplate : '',
@@ -778,6 +893,8 @@ export function sendMessages(ids: string[], operator: string) {
               m.audience,
               m.scope,
               m.employeeIds,
+              m.adminScope,
+              m.adminUserIds,
             )} 人`
           : '已发送过，本次跳过',
     }))
@@ -788,7 +905,13 @@ export function sendMessages(ids: string[], operator: string) {
         ? {
             ...m,
             status: '已发送',
-            recipients: plannedRecipients(m.audience, m.scope, m.employeeIds),
+            recipients: plannedRecipients(
+              m.audience,
+              m.scope,
+              m.employeeIds,
+              m.adminScope,
+              m.adminUserIds,
+            ),
             sentAt: at,
             sender: operator,
           }

@@ -33,6 +33,9 @@ import { BatchResultDialog } from '@/components/content/batch-result-dialog'
 import { breadcrumbFor } from '@/lib/nav'
 import { downloadCsv } from '@/lib/export'
 import {
+  ADMIN_ROLE_NAMES,
+  ADMIN_SCOPES,
+  ADMIN_USERS,
   audienceTone,
   CLEAR_TEMPLATE_TEXT,
   CLEAR_TEMPLATES,
@@ -56,6 +59,7 @@ import {
   updateMessage,
   useOps,
   validateMessage,
+  type AdminScope,
   type ClearTemplate,
   type MessageAudience,
   type MessageDraft,
@@ -140,6 +144,11 @@ export default function MessagesPage() {
   const [picked, setPicked] = React.useState<string[]>([])
   const [pickKeyword, setPickKeyword] = React.useState('')
   const [pickStatus, setPickStatus] = React.useState('全部状态')
+  /** 选择后台用户弹窗：打开状态、已勾选、关键字与角色筛选 */
+  const [userPickerOpen, setUserPickerOpen] = React.useState(false)
+  const [pickedUsers, setPickedUsers] = React.useState<string[]>([])
+  const [userKeyword, setUserKeyword] = React.useState('')
+  const [userRole, setUserRole] = React.useState('全部角色')
   const [results, setResults] = React.useState<
     { id: string; label: string; ok: boolean; message: string }[] | null
   >(null)
@@ -182,6 +191,16 @@ export default function MessagesPage() {
     })
   }, [pickKeyword, pickStatus])
 
+  const userPickerRows = React.useMemo(() => {
+    const kw = userKeyword.trim()
+    return ADMIN_USERS.filter((u) => {
+      const hitKw =
+        !kw || u.account.includes(kw) || u.name.includes(kw) || u.dept.includes(kw)
+      const hitRole = userRole === '全部角色' || u.role === userRole
+      return hitKw && hitRole
+    })
+  }, [userKeyword, userRole])
+
   function search() {
     setQuery({ type, audience, status, title, start, end })
     table.setPage(1)
@@ -220,6 +239,8 @@ export default function MessagesPage() {
       audience: m.audience,
       scope: m.scope,
       employeeIds: m.employeeIds,
+      adminScope: m.adminScope,
+      adminUserIds: m.adminUserIds,
       title: m.title,
       content: m.content,
       clearTemplate: m.clearTemplate,
@@ -227,13 +248,24 @@ export default function MessagesPage() {
     setFormOpen(true)
   }
 
-  /** 切换接收端：管理端后台不涉及员工范围，切走时清空范围与已选员工 */
+  /** 切换接收端：两端各自维护接收范围，切走时清空另一端的范围与名单 */
   function changeAudience(next: MessageAudience) {
     setDraft((d) => ({
       ...d,
       audience: next,
       scope: next === 'APP' ? d.scope || '全部' : '',
       employeeIds: next === 'APP' ? d.employeeIds : [],
+      adminScope: next === '管理端后台' ? d.adminScope || '全部' : '',
+      adminUserIds: next === '管理端后台' ? d.adminUserIds : [],
+    }))
+  }
+
+  /** 切换后台用户范围：非「选择用户」时清空已选名单 */
+  function changeAdminScope(next: AdminScope) {
+    setDraft((d) => ({
+      ...d,
+      adminScope: next,
+      adminUserIds: next === '选择用户' ? d.adminUserIds : [],
     }))
   }
 
@@ -261,6 +293,23 @@ export default function MessagesPage() {
     setDraft((d) => ({ ...d, employeeIds: picked }))
     setPickerOpen(false)
     toast.success(`已选择 ${picked.length} 名员工`)
+  }
+
+  function openUserPicker() {
+    setPickedUsers(draft.adminUserIds)
+    setUserKeyword('')
+    setUserRole('全部角色')
+    setUserPickerOpen(true)
+  }
+
+  function confirmUserPicker() {
+    if (pickedUsers.length === 0) {
+      toast.error('请至少选择一名后台用户')
+      return
+    }
+    setDraft((d) => ({ ...d, adminUserIds: pickedUsers }))
+    setUserPickerOpen(false)
+    toast.success(`已选择 ${pickedUsers.length} 名后台用户`)
   }
 
   /** 切换消息类型时清掉不适用的清零模板，避免残留脏数据 */
@@ -425,7 +474,7 @@ export default function MessagesPage() {
                     m.code,
                     m.type,
                     m.audience,
-                    m.audience === 'APP' ? scopeText(m) : '—',
+                    scopeText(m),
                     m.title,
                     m.origin,
                     m.status,
@@ -492,7 +541,7 @@ export default function MessagesPage() {
                     <StatusTag tone={audienceTone(m.audience)}>{m.audience}</StatusTag>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {m.audience === 'APP' ? scopeText(m) : '—'}
+                    {scopeText(m)}
                   </TableCell>
                   <TableCell>
                     <button
@@ -626,6 +675,36 @@ export default function MessagesPage() {
                         {plannedRecipients(draft.audience, draft.scope, draft.employeeIds)}
                       </span>{' '}
                       人
+                    </span>
+                  )}
+                </div>
+              </FormRow>
+            )}
+
+            {draft.audience === '管理端后台' && (
+              <FormRow label="接收用户" required>
+                <div className="flex flex-wrap items-center gap-2">
+                  <NativeSelect
+                    aria-label="接收用户"
+                    className="w-40"
+                    value={draft.adminScope || '全部'}
+                    onChange={(v) => changeAdminScope(v as AdminScope)}
+                    options={ADMIN_SCOPES}
+                  />
+                  {draft.adminScope === '选择用户' ? (
+                    <>
+                      <Button size="sm" variant="outline" onClick={openUserPicker}>
+                        <Users className="size-3.5" />
+                        选择用户
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        已选 {draft.adminUserIds.length} 人
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      全部管理员共{' '}
+                      <span className="font-mono">{ADMIN_USERS.length}</span> 人
                     </span>
                   )}
                 </div>
@@ -774,10 +853,18 @@ export default function MessagesPage() {
             <Table className="text-[13px]">
               <TableHeader>
                 <TableRow className="bg-muted/60">
-                  <TableHead className="w-28 pl-4">员工工号</TableHead>
-                  <TableHead className="w-24">员工姓名</TableHead>
-                  <TableHead className="w-28">员工公司</TableHead>
-                  <TableHead className="min-w-36">员工部门</TableHead>
+                  <TableHead className="w-32 pl-4">
+                    {delivery?.audience === '管理端后台' ? '用户账号' : '员工工号'}
+                  </TableHead>
+                  <TableHead className="w-24">
+                    {delivery?.audience === '管理端后台' ? '用户姓名' : '员工姓名'}
+                  </TableHead>
+                  <TableHead className="w-28">
+                    {delivery?.audience === '管理端后台' ? '角色' : '员工公司'}
+                  </TableHead>
+                  <TableHead className="min-w-36">
+                    {delivery?.audience === '管理端后台' ? '用户部门' : '员工部门'}
+                  </TableHead>
                   <TableHead className="w-40">发送时间</TableHead>
                   <TableHead className="w-24 pr-4">是否成功</TableHead>
                 </TableRow>
@@ -787,12 +874,10 @@ export default function MessagesPage() {
                   <TableEmpty colSpan={6} text="暂无发送明细" />
                 )}
                 {deliveryRows.map((d) => (
-                  <TableRow key={d.employeeNo}>
-                    <TableCell className="pl-4 font-mono text-xs">
-                      {d.employeeNo}
-                    </TableCell>
+                  <TableRow key={d.key}>
+                    <TableCell className="pl-4 font-mono text-xs">{d.no}</TableCell>
                     <TableCell>{d.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{d.company}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.org}</TableCell>
                     <TableCell className="text-muted-foreground">{d.dept}</TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {d.sentAt}
@@ -907,6 +992,102 @@ export default function MessagesPage() {
               取消
             </Button>
             <Button onClick={confirmPicker}>确定</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 选择后台用户：支持账号/姓名/部门关键字与角色筛选，可多选 */}
+      <Dialog open={userPickerOpen} onOpenChange={setUserPickerOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>选择后台用户</DialogTitle>
+            <DialogDescription>
+              勾选后仅这些管理端账号会收到该消息，未勾选的账号不会收到提醒。
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              className="w-56"
+              value={userKeyword}
+              placeholder="账号 / 姓名 / 部门"
+              aria-label="用户关键字"
+              onChange={(e) => setUserKeyword(e.target.value)}
+            />
+            <NativeSelect
+              aria-label="用户角色"
+              className="w-40"
+              value={userRole}
+              onChange={setUserRole}
+              options={['全部角色', ...ADMIN_ROLE_NAMES]}
+            />
+            <span className="ml-auto text-xs text-muted-foreground">
+              已选 {pickedUsers.length} 人
+            </span>
+          </div>
+
+          <div className="scroll-thin max-h-[46vh] overflow-auto rounded-md border border-border">
+            <Table className="text-[13px]">
+              <TableHeader>
+                <TableRow className="bg-muted/60">
+                  <TableHead className="w-10 pl-4">
+                    <Checkbox
+                      aria-label="全选筛选结果"
+                      checked={
+                        userPickerRows.length > 0 &&
+                        userPickerRows.every((u) => pickedUsers.includes(u.id))
+                      }
+                      onCheckedChange={(v) =>
+                        setPickedUsers((prev) =>
+                          v
+                            ? Array.from(
+                                new Set([...prev, ...userPickerRows.map((u) => u.id)]),
+                              )
+                            : prev.filter(
+                                (id) => !userPickerRows.some((u) => u.id === id),
+                              ),
+                        )
+                      }
+                    />
+                  </TableHead>
+                  <TableHead className="w-40">用户账号</TableHead>
+                  <TableHead className="w-24">用户姓名</TableHead>
+                  <TableHead className="min-w-36">用户部门</TableHead>
+                  <TableHead className="w-32 pr-4">角色</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userPickerRows.length === 0 && (
+                  <TableEmpty colSpan={5} text="没有符合条件的后台用户" />
+                )}
+                {userPickerRows.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="pl-4">
+                      <Checkbox
+                        aria-label={`选择用户 ${u.name}`}
+                        checked={pickedUsers.includes(u.id)}
+                        onCheckedChange={(v) =>
+                          setPickedUsers((prev) =>
+                            v ? [...prev, u.id] : prev.filter((id) => id !== u.id),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{u.account}</TableCell>
+                    <TableCell>{u.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.dept}</TableCell>
+                    <TableCell className="pr-4 text-muted-foreground">{u.role}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUserPickerOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={confirmUserPicker}>确定</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
