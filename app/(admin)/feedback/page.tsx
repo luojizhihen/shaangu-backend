@@ -35,7 +35,6 @@ import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -348,15 +347,12 @@ export default function FeedbackPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        {/* 无描述文案，显式置空 aria-describedby 以免 Radix 指向不存在的节点 */}
+        <DialogContent className="sm:max-w-lg" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>
               {target?.status === '待回复' ? '回复反馈' : '反馈详情'}
             </DialogTitle>
-            <DialogDescription>
-              反馈只包含文字。填写回复并保存后，状态立即由「待回复」变为「已处理」，
-              无需用户确认或二次审核。
-            </DialogDescription>
           </DialogHeader>
 
           {target && (
