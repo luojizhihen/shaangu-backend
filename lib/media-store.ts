@@ -250,7 +250,7 @@ const SEED_COMMENTS: MediaComment[] = [
   {
     id: 'AVC-002',
     mediaId: 'AV-20260810-001',
-    mediaTitle: '智能制造车间：一台大型鼓风机���诞生',
+    mediaTitle: '智能制造车间：一台大型鼓风机的诞生',
     mediaKind: '视频',
     content: '画面清晰度很高，手机上播放也很流畅。',
     nickname: '山鹰',
@@ -508,7 +508,7 @@ export function publishMedia(ids: string[], publisher: string): BatchResult[] {
         id: m.id,
         label: m.title,
         ok: false,
-        message: '已下架内容请使用「上架」��新上架',
+        message: '已下架内容请使用「上架」重新上架',
       })
       return m
     }

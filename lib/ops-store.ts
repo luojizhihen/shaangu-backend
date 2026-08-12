@@ -197,18 +197,18 @@ const SCOPE_SIZE: Record<MessageScope, number> = {
  * 此处样本用于「选择用户」弹窗与管理端后台的发送明细展示。
  */
 export const ADMIN_USERS: AdminUser[] = [
-  { id: 'U-01', account: 'admin', name: '张亦驰', dept: '平台管理部', role: '超级管理员' },
-  { id: 'U-02', account: 'admin.normal', name: '王海涛', dept: '平台管理部', role: '普通管理员' },
+  { id: 'U-01', account: 'admin', name: '张亦驰', dept: '信息管理部', role: '超级管理员' },
+  { id: 'U-02', account: 'admin.normal', name: '王海涛', dept: '信息管理部', role: '普通管理员' },
   { id: 'U-03', account: 'admin.news', name: '李雯', dept: '党群工作部', role: '资讯管理员' },
-  { id: 'U-04', account: 'admin.media', name: '孙可', dept: '党群工作部', role: '视听管理员' },
-  { id: 'U-05', account: 'admin.publish', name: '周敬', dept: '信息安全部', role: '发布审核员' },
-  { id: 'U-06', account: 'admin.forum', name: '许沐', dept: '工会办公室', role: '论坛管理员' },
-  { id: 'U-07', account: 'admin.points', name: '赵越', dept: '工会办公室', role: '积分管理员' },
-  { id: 'U-08', account: 'admin.ops', name: '钱思远', dept: '运维服务中心', role: '运营管理员' },
+  { id: 'U-04', account: 'admin.media', name: '赵启明', dept: '党群工作部', role: '视听管理员' },
+  { id: 'U-05', account: 'admin.publish', name: '陈锐', dept: '党群工作部', role: '固定发布人员' },
+  { id: 'U-06', account: 'admin.forum', name: '刘思远', dept: '工会办公室', role: '论坛管理员' },
+  { id: 'U-07', account: 'admin.points', name: '孙可', dept: '工会办公室', role: '积分/商城管理员' },
+  { id: 'U-08', account: 'admin.ops', name: '周敬', dept: '信息管理部', role: '运维与安全人员' },
   { id: 'U-09', account: 'admin.hr', name: '汪筱', dept: '人力资源部', role: '普通管理员' },
   { id: 'U-10', account: 'admin.union', name: '鹿鸣', dept: '工会办公室', role: '普通管理员' },
-  { id: 'U-11', account: 'admin.audit', name: '陆东南', dept: '审计监察部', role: '发布审核员' },
-  { id: 'U-12', account: 'admin.it', name: '李鸣泉', dept: '运维服务中心', role: '运营管理员' },
+  { id: 'U-11', account: 'admin.news2', name: '陆东南', dept: '党群工作部', role: '资讯管理员' },
+  { id: 'U-12', account: 'admin.ops2', name: '李鸣泉', dept: '信息管理部', role: '运维与安全人员' },
 ]
 
 /** 后台角色清单，供「选择用户」弹窗按角色筛选 */
@@ -367,7 +367,7 @@ const SEED_MESSAGES: OpsMessage[] = [
     scope: '',
     employeeIds: [],
     adminScope: '选择用户',
-    adminUserIds: ['U-01', 'U-02', 'U-08'],
+    adminUserIds: ['U-01', 'U-02', 'U-03'],
     title: '待办提醒：5 条意见反馈待回复',
     content: '意见反馈中有 5 条处于「待回复」，请及时进入意见反馈管理处理。',
     status: '已发送',

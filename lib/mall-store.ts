@@ -668,7 +668,7 @@ export function ordersOfProduct(productId: string) {
  *
  * 幂等约束：积分与库存在兑换下单时已结算，
  * 本操作只做「待领取 → 已领取」的状态流转，
- * 已领取订单重复确认直接返回失败，不会二次���动积分或库存。
+ * 已领取订单重复确认直接返回失败，不会二次变动积分或库存。
  */
 export function confirmReceive(id: string, operator: string): BatchResult {
   const order = getOrder(id)

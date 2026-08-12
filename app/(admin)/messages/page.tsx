@@ -455,7 +455,7 @@ export default function MessagesPage() {
               variant="outline"
               onClick={() => {
                 downloadCsv(
-                  '站内消息',
+                  '消息管理',
                   [
                     '消息编号',
                     '消息类型',

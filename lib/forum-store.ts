@@ -515,7 +515,7 @@ const SEED_COMMENTS: ForumComment[] = [
   {
     id: 'FC-006',
     postId: 'FP-20260809-002',
-    postTitle: '通勤班车早班发车���间调整意见征集',
+    postTitle: '通勤班车早班发车时间调整意见征集',
     postType: '投票',
     parentId: 'FC-005',
     content: '东厂区接驳会一并纳入评估，投票截止后统一答复。',
