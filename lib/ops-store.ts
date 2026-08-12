@@ -6,7 +6,8 @@
  * 业务基线（务必保持）：
  * - 站内消息与资讯栏目的「通知」完全分开：消息只在消息中心内流转，
  *   不占用资讯类目、不进入资讯列表，也不参与资讯的评论与积分计算。
- * - 消息必须区分接收端：发给「员工端」或发给「管理端后台」，两者互不串发。
+ * - 消息必须区分接收端：发给「APP」或发给「管理端后台」，两者互不串发。
+ * - 接收端为 APP 时还需指定员工范围：全部 / 在职员工 / 退休员工 / 选择员工。
  * - 年度清零消息只有「提前 30 天」「提前 7 天」两种模板，内容由模板生成后可微调。
  * - 意见反馈只有文字：不含图片、附件、语音。
  * - 反馈处理只有一步：管理员填写回复并保存后立即由「待回复」变为「已处理」，
@@ -17,15 +18,13 @@ import * as React from 'react'
 
 /* ---------------- 消息类型 ---------------- */
 
-export type MessageType =
-  | '系统消息'
-  | '资讯更新'
-  | '积分变动'
-  | '年度清零'
-  | '运营消息'
+export type MessageType = '系统消息' | '积分变动' | '年度清零' | '运营消息'
 
-/** 接收端：员工端为会员侧消息中心，管理端后台为管理员提醒 */
-export type MessageAudience = '员工端' | '管理端后台'
+/** 接收端：APP 为员工侧消息中心，管理端后台为管理员提醒 */
+export type MessageAudience = 'APP' | '管理端后台'
+
+/** APP 侧的员工范围；管理端后台不适用，固定为空 */
+export type MessageScope = '全部' | '在职员工' | '退休员工' | '选择员工'
 
 /** 待发送可编辑可删除；已发送只读留痕 */
 export type MessageStatus = '待发送' | '已发送'
@@ -36,19 +35,49 @@ export type ClearTemplate = '提前 30 天' | '提前 7 天'
 /** 来源：系统按规则自动生成，或管理员手工新增 */
 export type MessageOrigin = '系统自动' | '人工新增'
 
+/** 员工在职状态，决定其是否落入「在职员工」或「退休员工」范围 */
+export type EmployeeStatus = '在职' | '退休'
+
+/** 员工名册，供 APP 接收范围与选择员工弹窗使用 */
+export type Employee = {
+  id: string
+  /** 员工工号 */
+  no: string
+  name: string
+  company: string
+  dept: string
+  status: EmployeeStatus
+}
+
+/** 发送明细：一条消息发给一名员工的投递结果 */
+export type DeliveryRecord = {
+  employeeNo: string
+  name: string
+  company: string
+  dept: string
+  /** 该条投递的发送时间 */
+  sentAt: string
+  /** 是否成功送达 */
+  success: boolean
+}
+
 export type OpsMessage = {
   id: string
   /** 消息编号，全局唯一 */
   code: string
   type: MessageType
   audience: MessageAudience
+  /** 接收端为 APP 时的员工范围；管理端后台为空 */
+  scope: MessageScope | ''
+  /** 范围为「选择员工」时的员工 id 列表，其他范围为空 */
+  employeeIds: string[]
   title: string
   content: string
   status: MessageStatus
   origin: MessageOrigin
   /** 仅年度清零消息使用 */
   clearTemplate: ClearTemplate | ''
-  /** 接收人数，发送后由系统按接收端范围统计 */
+  /** 接收人数，发送后由系统按接收范围统计 */
   recipients: number
   createdAt: string
   creator: string
@@ -83,13 +112,19 @@ export type Feedback = {
 
 export const MESSAGE_TYPES: MessageType[] = [
   '系统消息',
-  '资讯更新',
   '积分变动',
   '年度清零',
   '运营消息',
 ]
 
-export const MESSAGE_AUDIENCES: MessageAudience[] = ['员工端', '管理端后台']
+export const MESSAGE_AUDIENCES: MessageAudience[] = ['APP', '管理端后台']
+export const MESSAGE_SCOPES: MessageScope[] = [
+  '全部',
+  '在职员工',
+  '退休员工',
+  '选择员工',
+]
+export const EMPLOYEE_STATUSES: EmployeeStatus[] = ['在职', '退休']
 export const MESSAGE_STATUSES: MessageStatus[] = ['待发送', '已发送']
 export const CLEAR_TEMPLATES: ClearTemplate[] = ['提前 30 天', '提前 7 天']
 export const FEEDBACK_STATUSES: FeedbackStatus[] = ['待回复', '已处理']
@@ -99,11 +134,41 @@ export const MESSAGE_TITLE_MAX = 40
 export const MESSAGE_CONTENT_MAX = 300
 export const REPLY_MAX = 300
 
-/** 各接收端的默认接收人数，仅用于原型展示发送范围规模 */
-const AUDIENCE_SIZE: Record<MessageAudience, number> = {
-  员工端: 1286,
-  管理端后台: 12,
+/**
+ * 员工名册（原型样本）。真实环境由组织同步而来，
+ * 此处样本用于「选择员工」弹窗与发送明细展示。
+ */
+export const EMPLOYEES: Employee[] = [
+  { id: 'E-01', no: 'SG10023', name: '汪筱', company: '陕鼓动力', dept: '技术中心', status: '在职' },
+  { id: 'E-02', no: 'SG10057', name: '鹿鸣', company: '陕鼓动力', dept: '能源互联事业部', status: '在职' },
+  { id: 'E-03', no: 'SG10112', name: '陆东南', company: '陕鼓动力', dept: '装备制造事业部', status: '在职' },
+  { id: 'E-04', no: 'SG10189', name: '周敬', company: '陕鼓集团', dept: '信息安全部', status: '在职' },
+  { id: 'E-05', no: 'SG10204', name: '孙可', company: '陕鼓集团', dept: '平台管理部', status: '在职' },
+  { id: 'E-06', no: 'SG10238', name: '王海涛', company: '陕鼓集团', dept: '平台管理部', status: '在职' },
+  { id: 'E-07', no: 'SG10341', name: '李鸣泉', company: '陕鼓能源', dept: '运维服务中心', status: '在职' },
+  { id: 'E-08', no: 'SG10402', name: '赵越', company: '陕鼓能源', dept: '项目管理部', status: '在职' },
+  { id: 'E-09', no: 'SG10455', name: '钱思远', company: '陕鼓智能', dept: '研发一部', status: '在职' },
+  { id: 'E-10', no: 'SG10488', name: '许沐', company: '陕鼓智能', dept: '研发二部', status: '在职' },
+  { id: 'E-11', no: 'SG09012', name: '何长庚', company: '陕鼓动力', dept: '离退休服务中心', status: '退休' },
+  { id: 'E-12', no: 'SG09044', name: '范秀英', company: '陕鼓动力', dept: '离退休服务中心', status: '退休' },
+  { id: 'E-13', no: 'SG09077', name: '邓怀安', company: '陕鼓集团', dept: '离退休服务中心', status: '退休' },
+  { id: 'E-14', no: 'SG09103', name: '柳文彬', company: '陕鼓集团', dept: '离退休服务中心', status: '退休' },
+  { id: 'E-15', no: 'SG09156', name: '梁玉兰', company: '陕鼓能源', dept: '离退休服务中心', status: '退休' },
+]
+
+/**
+ * 各发送范围的规模（原型值）。真实环境按组织人数实时统计，
+ * 「选择员工」按实际勾选人数计算，不走此表。
+ */
+const SCOPE_SIZE: Record<MessageScope, number> = {
+  全部: 1286,
+  在职员工: 1108,
+  退休员工: 178,
+  选择员工: 0,
 }
+
+/** 管理端后台的接收人数（管理员账号数） */
+const ADMIN_SIZE = 12
 
 /** 年度清零两种模板的默认文案，选中模板后自动填入且允许微调 */
 export const CLEAR_TEMPLATE_TEXT: Record<
@@ -129,7 +194,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-12',
     code: 'MSG20260810000012',
     type: '年度清零',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '全部',
+    employeeIds: [],
     title: '年度积分清零提醒（30 天）',
     content: CLEAR_TEMPLATE_TEXT['提前 30 天'].content,
     status: '待发送',
@@ -145,7 +212,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-11',
     code: 'MSG20260810000011',
     type: '运营消息',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '在职员工',
+    employeeIds: [],
     title: '陕鼓 55 周年主题征文开启',
     content:
       '陕鼓 55 周年主题征文即日起开放投稿，可在论坛「官方话题」下参与，入选稿件将在资讯栏目展示。',
@@ -163,6 +232,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     code: 'MSG20260809000010',
     type: '系统消息',
     audience: '管理端后台',
+    scope: '',
+    employeeIds: [],
     title: '待办提醒：3 条兑换订单待确认领取',
     content:
       '积分商城当前有 3 条订单处于「待领取」，请联系员工核对后在订单管理中确认领取。',
@@ -176,34 +247,19 @@ const SEED_MESSAGES: OpsMessage[] = [
     sender: '系统',
   },
   {
-    id: 'OM-09',
-    code: 'MSG20260808000009',
-    type: '资讯更新',
-    audience: '员工端',
-    title: '新资讯发布：陕鼓能源互联岛项目投运',
-    content:
-      '「陕鼓能源互联岛项目投运」已发布，可在资讯栏目查看全文。阅读并停留 10 秒以上可获得积分。',
-    status: '已发送',
-    origin: '系统自动',
-    clearTemplate: '',
-    recipients: 1286,
-    createdAt: '2026-08-08 15:31:06',
-    creator: '系统',
-    sentAt: '2026-08-08 15:31:06',
-    sender: '系统',
-  },
-  {
     id: 'OM-08',
     code: 'MSG20260807000008',
     type: '积分变动',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '选择员工',
+    employeeIds: ['E-01'],
     title: '积分到账提醒',
     content:
       '您因「评论（审核通过）」获得 2 积分，当前可用积分 386。积分明细可在个人中心查看。',
     status: '已发送',
     origin: '系统自动',
     clearTemplate: '',
-    recipients: 1286,
+    recipients: 1,
     createdAt: '2026-08-07 09:41:25',
     creator: '系统',
     sentAt: '2026-08-07 09:41:25',
@@ -213,7 +269,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-07',
     code: 'MSG20260806000007',
     type: '系统消息',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '全部',
+    employeeIds: [],
     title: '平台维护通知',
     content:
       '平台将于 2026-08-12 22:00 至 23:00 进行例行维护，期间资讯浏览与积分兑换可能短暂不可用。',
@@ -230,7 +288,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-06',
     code: 'MSG20260805000006',
     type: '运营消息',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '在职员工',
+    employeeIds: [],
     title: '积分商城上新：富光×陕鼓 55 周年保温杯',
     content:
       '积分商城已上新「富光×陕鼓55周年保温杯」，所需积分 2000，每人每半年可兑换 1 个，先兑先得。',
@@ -248,6 +308,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     code: 'MSG20260804000005',
     type: '系统消息',
     audience: '管理端后台',
+    scope: '',
+    employeeIds: [],
     title: '待办提醒：5 条意见反馈待回复',
     content: '意见反馈中有 5 条处于「待回复」，请及时进入意见反馈管理处理。',
     status: '已发送',
@@ -263,14 +325,16 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-04',
     code: 'MSG20260731000004',
     type: '积分变动',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '选择员工',
+    employeeIds: ['E-03'],
     title: '积分扣减提醒',
     content:
       '您兑换「天堂307E升级黑胶伞」扣减 2000 积分，当前可用积分 430。请留意领取通知。',
     status: '已发送',
     origin: '系统自动',
     clearTemplate: '',
-    recipients: 1286,
+    recipients: 1,
     createdAt: '2026-07-31 14:31:50',
     creator: '系统',
     sentAt: '2026-07-31 14:31:50',
@@ -280,7 +344,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-03',
     code: 'MSG20251224000003',
     type: '年度清零',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '全部',
+    employeeIds: [],
     title: '年度积分清零提醒（7 天）',
     content:
       '您的 2025 年度积分将于 2025-12-31 24:00 统一清零，距清零仅剩 7 天。请尽快前往积分商城完成兑换，清零后积分不再保留、不可恢复。',
@@ -297,7 +363,9 @@ const SEED_MESSAGES: OpsMessage[] = [
     id: 'OM-02',
     code: 'MSG20251201000002',
     type: '年度清零',
-    audience: '员工端',
+    audience: 'APP',
+    scope: '全部',
+    employeeIds: [],
     title: '年度积分清零提醒（30 天）',
     content:
       '您的 2025 年度积分将于 2025-12-31 24:00 统一清零，距清零还有 30 天。请提前前往积分商城完成兑换，清零后积分不再保留、不可恢复。',
@@ -315,6 +383,8 @@ const SEED_MESSAGES: OpsMessage[] = [
     code: 'MSG20251130000001',
     type: '系统消息',
     audience: '管理端后台',
+    scope: '',
+    employeeIds: [],
     title: '年度清零任务已就绪',
     content:
       '2025 年度积分清零任务将于 2025-12-31 24:00 自动执行，执行前请确认积分商城库存与订单已处理完毕。',
@@ -527,7 +597,7 @@ function nextMessageCode(d = new Date()) {
 export function messageTypeTone(t: MessageType) {
   if (t === '年度清零') return 'warning' as const
   if (t === '积分变动') return 'success' as const
-  if (t === '资讯更新') return 'info' as const
+  if (t === '运营消息') return 'info' as const
   return 'neutral' as const
 }
 
@@ -536,7 +606,55 @@ export function messageStatusTone(s: MessageStatus) {
 }
 
 export function audienceTone(a: MessageAudience) {
-  return a === '员工端' ? ('info' as const) : ('neutral' as const)
+  return a === 'APP' ? ('info' as const) : ('neutral' as const)
+}
+
+/** 接收范围的展示文案，如「APP · 在职员工」「APP · 选择员工（2 人）」 */
+export function scopeText(m: OpsMessage) {
+  if (m.audience === '管理端后台') return '管理端后台'
+  if (m.scope === '选择员工') return `选择员工（${m.employeeIds.length} 人）`
+  return m.scope || '全部'
+}
+
+/** 按接收范围解析命中的员工名册 */
+export function resolveEmployees(
+  audience: MessageAudience,
+  scope: MessageScope | '',
+  employeeIds: string[],
+): Employee[] {
+  if (audience === '管理端后台') return []
+  if (scope === '选择员工') return EMPLOYEES.filter((e) => employeeIds.includes(e.id))
+  if (scope === '在职员工') return EMPLOYEES.filter((e) => e.status === '在职')
+  if (scope === '退休员工') return EMPLOYEES.filter((e) => e.status === '退休')
+  return EMPLOYEES
+}
+
+/** 待发送消息的预计接收人数；选择员工按实际勾选数计算 */
+export function plannedRecipients(
+  audience: MessageAudience,
+  scope: MessageScope | '',
+  employeeIds: string[],
+) {
+  if (audience === '管理端后台') return ADMIN_SIZE
+  if (scope === '选择员工') return employeeIds.length
+  return SCOPE_SIZE[(scope || '全部') as MessageScope]
+}
+
+/**
+ * 发送明细：按接收范围列出每名员工的投递结果。
+ * 原型下以名册样本演示，真实环境由推送网关回执生成。
+ */
+export function deliveryRecords(m: OpsMessage): DeliveryRecord[] {
+  if (m.status !== '已发送') return []
+  return resolveEmployees(m.audience, m.scope, m.employeeIds).map((e, i) => ({
+    employeeNo: e.no,
+    name: e.name,
+    company: e.company,
+    dept: e.dept,
+    sentAt: m.sentAt,
+    // 原型下固定第 7 条演示失败回执，便于查看失败态
+    success: i !== 6,
+  }))
 }
 
 export function feedbackStatusTone(s: FeedbackStatus) {
@@ -548,6 +666,8 @@ export function feedbackStatusTone(s: FeedbackStatus) {
 export type MessageDraft = {
   type: MessageType
   audience: MessageAudience
+  scope: MessageScope | ''
+  employeeIds: string[]
   title: string
   content: string
   clearTemplate: ClearTemplate | ''
@@ -555,7 +675,9 @@ export type MessageDraft = {
 
 export const EMPTY_MESSAGE_DRAFT: MessageDraft = {
   type: '系统消息',
-  audience: '员工端',
+  audience: 'APP',
+  scope: '全部',
+  employeeIds: [],
   title: '',
   content: '',
   clearTemplate: '',
@@ -579,6 +701,12 @@ export function validateMessage(draft: MessageDraft): string[] {
   if (draft.type !== '年度清零' && draft.clearTemplate)
     issues.push('清零提醒模板仅适用于年度清零消息')
 
+  if (draft.audience === 'APP') {
+    if (!draft.scope) issues.push('接收端为 APP 时需选择员工范围')
+    else if (draft.scope === '选择员工' && draft.employeeIds.length === 0)
+      issues.push('请至少选择一名员工')
+  }
+
   return issues
 }
 
@@ -588,6 +716,9 @@ export function createMessage(draft: MessageDraft, operator: string) {
     code: nextMessageCode(),
     type: draft.type,
     audience: draft.audience,
+    scope: draft.audience === 'APP' ? draft.scope : '',
+    employeeIds:
+      draft.audience === 'APP' && draft.scope === '选择员工' ? draft.employeeIds : [],
     title: draft.title.trim(),
     content: draft.content.trim(),
     status: '待发送',
@@ -617,6 +748,11 @@ export function updateMessage(id: string, draft: MessageDraft) {
             ...m,
             type: draft.type,
             audience: draft.audience,
+            scope: draft.audience === 'APP' ? draft.scope : '',
+            employeeIds:
+              draft.audience === 'APP' && draft.scope === '选择员工'
+                ? draft.employeeIds
+                : [],
             title: draft.title.trim(),
             content: draft.content.trim(),
             clearTemplate: draft.type === '年度清零' ? draft.clearTemplate : '',
@@ -627,7 +763,7 @@ export function updateMessage(id: string, draft: MessageDraft) {
   return { ok: true, message: '消息已保存' }
 }
 
-/** 发送后按接收端统计接收人数，并记录发送人与发送时间 */
+/** 发送后按接收范围统计接收人数，并记录发送人与发送时间 */
 export function sendMessages(ids: string[], operator: string) {
   const at = stamp()
   const results = state.messages
@@ -638,7 +774,11 @@ export function sendMessages(ids: string[], operator: string) {
       ok: m.status === '待发送',
       message:
         m.status === '待发送'
-          ? `已发送至${m.audience}，接收 ${AUDIENCE_SIZE[m.audience]} 人`
+          ? `已发送至${scopeText(m)}，接收 ${plannedRecipients(
+              m.audience,
+              m.scope,
+              m.employeeIds,
+            )} 人`
           : '已发送过，本次跳过',
     }))
 
@@ -648,7 +788,7 @@ export function sendMessages(ids: string[], operator: string) {
         ? {
             ...m,
             status: '已发送',
-            recipients: AUDIENCE_SIZE[m.audience],
+            recipients: plannedRecipients(m.audience, m.scope, m.employeeIds),
             sentAt: at,
             sender: operator,
           }

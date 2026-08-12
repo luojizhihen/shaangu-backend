@@ -10,6 +10,7 @@ import {
   Send,
   SquarePen,
   Trash2,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -36,15 +37,21 @@ import {
   CLEAR_TEMPLATE_TEXT,
   CLEAR_TEMPLATES,
   createMessage,
+  deliveryRecords,
+  EMPLOYEE_STATUSES,
+  EMPLOYEES,
   EMPTY_MESSAGE_DRAFT,
   MESSAGE_AUDIENCES,
   MESSAGE_CONTENT_MAX,
+  MESSAGE_SCOPES,
   MESSAGE_STATUSES,
   MESSAGE_TITLE_MAX,
   MESSAGE_TYPES,
   messageStatusTone,
   messageTypeTone,
+  plannedRecipients,
   removeMessages,
+  scopeText,
   sendMessages,
   updateMessage,
   useOps,
@@ -52,6 +59,7 @@ import {
   type ClearTemplate,
   type MessageAudience,
   type MessageDraft,
+  type MessageScope,
   type MessageType,
   type OpsMessage,
 } from '@/lib/ops-store'
@@ -125,6 +133,13 @@ export default function MessagesPage() {
   const [editing, setEditing] = React.useState<OpsMessage | null>(null)
   const [draft, setDraft] = React.useState<MessageDraft>(EMPTY_MESSAGE_DRAFT)
   const [viewing, setViewing] = React.useState<OpsMessage | null>(null)
+  /** 点击接收人数后展示的发送明细 */
+  const [delivery, setDelivery] = React.useState<OpsMessage | null>(null)
+  /** 选择员工弹窗：打开状态、已勾选、筛选关键字与状态 */
+  const [pickerOpen, setPickerOpen] = React.useState(false)
+  const [picked, setPicked] = React.useState<string[]>([])
+  const [pickKeyword, setPickKeyword] = React.useState('')
+  const [pickStatus, setPickStatus] = React.useState('全部状态')
   const [results, setResults] = React.useState<
     { id: string; label: string; ok: boolean; message: string }[] | null
   >(null)
@@ -147,7 +162,25 @@ export default function MessagesPage() {
   )
 
   const table = useTableState(rows)
-  const pending = messages.filter((m) => m.status === '待发送').length
+
+  const deliveryRows = React.useMemo(
+    () => (delivery ? deliveryRecords(delivery) : []),
+    [delivery],
+  )
+
+  const pickerRows = React.useMemo(() => {
+    const kw = pickKeyword.trim()
+    return EMPLOYEES.filter((e) => {
+      const hitKw =
+        !kw ||
+        e.no.includes(kw) ||
+        e.name.includes(kw) ||
+        e.company.includes(kw) ||
+        e.dept.includes(kw)
+      const hitStatus = pickStatus === '全部状态' || e.status === pickStatus
+      return hitKw && hitStatus
+    })
+  }, [pickKeyword, pickStatus])
 
   function search() {
     setQuery({ type, audience, status, title, start, end })
@@ -185,11 +218,49 @@ export default function MessagesPage() {
     setDraft({
       type: m.type,
       audience: m.audience,
+      scope: m.scope,
+      employeeIds: m.employeeIds,
       title: m.title,
       content: m.content,
       clearTemplate: m.clearTemplate,
     })
     setFormOpen(true)
+  }
+
+  /** 切换接收端：管理端后台不涉及员工范围，切走时清空范围与已选员工 */
+  function changeAudience(next: MessageAudience) {
+    setDraft((d) => ({
+      ...d,
+      audience: next,
+      scope: next === 'APP' ? d.scope || '全部' : '',
+      employeeIds: next === 'APP' ? d.employeeIds : [],
+    }))
+  }
+
+  /** 切换员工范围：非「选择员工」时清空已选名单 */
+  function changeScope(next: MessageScope) {
+    setDraft((d) => ({
+      ...d,
+      scope: next,
+      employeeIds: next === '选择员工' ? d.employeeIds : [],
+    }))
+  }
+
+  function openPicker() {
+    setPicked(draft.employeeIds)
+    setPickKeyword('')
+    setPickStatus('全部状态')
+    setPickerOpen(true)
+  }
+
+  function confirmPicker() {
+    if (picked.length === 0) {
+      toast.error('请至少选择一名员工')
+      return
+    }
+    setDraft((d) => ({ ...d, employeeIds: picked }))
+    setPickerOpen(false)
+    toast.success(`已选择 ${picked.length} 名员工`)
   }
 
   /** 切换消息类型时清掉不适用的清零模板，避免残留脏数据 */
@@ -251,16 +322,10 @@ export default function MessagesPage() {
         breadcrumb={breadcrumbFor(pathname)}
         title="消息管理"
         actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={openCreate}>
-              <Plus className="size-4" />
-              新增消息
-            </Button>
-          </>
+          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
+            <RefreshCcw className="size-4" />
+            刷新
+          </Button>
         }
       />
 
@@ -346,8 +411,8 @@ export default function MessagesPage() {
                     '消息编号',
                     '消息类型',
                     '接收端',
+                    '接收范围',
                     '消息标题',
-                    '清零提醒模板',
                     '消息来源',
                     '发送状态',
                     '接收人数',
@@ -360,8 +425,8 @@ export default function MessagesPage() {
                     m.code,
                     m.type,
                     m.audience,
+                    m.audience === 'APP' ? scopeText(m) : '—',
                     m.title,
-                    m.clearTemplate || '—',
                     m.origin,
                     m.status,
                     m.status === '已发送' ? m.recipients : '—',
@@ -377,9 +442,6 @@ export default function MessagesPage() {
               <Download className="size-3.5" />
               导出
             </Button>
-            <span className="ml-auto text-xs text-muted-foreground">
-              待发送 {pending} 条 · 站内消息独立于资讯「通知」，不占用资讯类目
-            </span>
           </Toolbar>
 
           <Table className="text-[13px]">
@@ -394,10 +456,10 @@ export default function MessagesPage() {
                   />
                 </TableHead>
                 <TableHead className="w-24">消息类型</TableHead>
-                <TableHead className="w-24">接收端</TableHead>
+                <TableHead className="w-20">接收端</TableHead>
+                <TableHead className="w-32">接收范围</TableHead>
                 <TableHead className="min-w-52">消息标题</TableHead>
                 <TableHead className="w-40">消息编号</TableHead>
-                <TableHead className="w-24">清零模板</TableHead>
                 <TableHead className="w-20">消息来源</TableHead>
                 <TableHead className="w-20">发送状态</TableHead>
                 <TableHead className="w-20">接收人数</TableHead>
@@ -409,7 +471,7 @@ export default function MessagesPage() {
             </TableHeader>
             <TableBody>
               {table.pageRows.length === 0 && (
-                <TableEmpty colSpan={14} text="没有符合条件的消息" />
+                <TableEmpty colSpan={13} text="没有符合条件的消息" />
               )}
               {table.pageRows.map((m, i) => (
                 <TableRow key={m.id}>
@@ -429,6 +491,9 @@ export default function MessagesPage() {
                   <TableCell>
                     <StatusTag tone={audienceTone(m.audience)}>{m.audience}</StatusTag>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {m.audience === 'APP' ? scopeText(m) : '—'}
+                  </TableCell>
                   <TableCell>
                     <button
                       type="button"
@@ -443,16 +508,23 @@ export default function MessagesPage() {
                     {m.code}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {m.clearTemplate || '—'}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
                     {m.origin}
                   </TableCell>
                   <TableCell>
                     <StatusTag tone={messageStatusTone(m.status)}>{m.status}</StatusTag>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
-                    {m.status === '已发送' ? m.recipients : '—'}
+                    {m.status === '已发送' ? (
+                      <button
+                        type="button"
+                        className="text-brand underline-offset-2 hover:underline"
+                        onClick={() => setDelivery(m)}
+                      >
+                        {m.recipients}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {m.createdAt}
@@ -504,10 +576,6 @@ export default function MessagesPage() {
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editing ? '编辑消息' : '新增消息'}</DialogTitle>
-            <DialogDescription>
-              站内消息与资讯「通知」相互独立，只在消息中心内推送，不会进入资讯列表。
-              新增后先进入「待发送」，确认无误再发送。
-            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-3">
@@ -520,24 +588,52 @@ export default function MessagesPage() {
                   options={MESSAGE_TYPES}
                 />
               </FormRow>
-              <FormRow label="接收端" required hint="决定消息推送给员工还是管理员">
+              <FormRow label="接收端" required>
                 <NativeSelect
                   aria-label="接收端"
                   value={draft.audience}
-                  onChange={(v) =>
-                    setDraft((d) => ({ ...d, audience: v as MessageAudience }))
-                  }
+                  onChange={(v) => changeAudience(v as MessageAudience)}
                   options={MESSAGE_AUDIENCES}
                 />
               </FormRow>
             </div>
 
+            {draft.audience === 'APP' && (
+              <FormRow label="接收员工" required>
+                <div className="flex flex-wrap items-center gap-2">
+                  <NativeSelect
+                    aria-label="接收员工"
+                    className="w-40"
+                    value={draft.scope || '全部'}
+                    onChange={(v) => changeScope(v as MessageScope)}
+                    options={MESSAGE_SCOPES}
+                  />
+                  {draft.scope === '选择员工' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={openPicker}>
+                        <Users className="size-3.5" />
+                        选择员工
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        已选 {draft.employeeIds.length} 人
+                      </span>
+                    </>
+                  )}
+                  {draft.scope !== '选择员工' && (
+                    <span className="text-xs text-muted-foreground">
+                      预计接收{' '}
+                      <span className="font-mono">
+                        {plannedRecipients(draft.audience, draft.scope, draft.employeeIds)}
+                      </span>{' '}
+                      人
+                    </span>
+                  )}
+                </div>
+              </FormRow>
+            )}
+
             {draft.type === '年度清零' && (
-              <FormRow
-                label="清零提醒模板"
-                required
-                hint="年度清零仅提前 30 天与提前 7 天两次提醒，选择后自动填入文案，可继续微调"
-              >
+              <FormRow label="清零提醒模板" required>
                 <div className="flex flex-wrap gap-2">
                   {CLEAR_TEMPLATES.map((t) => (
                     <Button
@@ -601,7 +697,7 @@ export default function MessagesPage() {
                   {viewing.type}
                 </StatusTag>
                 <StatusTag tone={audienceTone(viewing.audience)}>
-                  {viewing.audience}
+                  {scopeText(viewing)}
                 </StatusTag>
                 <StatusTag tone={messageStatusTone(viewing.status)}>
                   {viewing.status}
@@ -658,6 +754,159 @@ export default function MessagesPage() {
                 立即发送
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 发送明细：点击接收人数后按员工逐条展示投递结果 */}
+      <Dialog open={delivery !== null} onOpenChange={(v) => !v && setDelivery(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>发送明细</DialogTitle>
+            <DialogDescription>
+              {delivery
+                ? `${delivery.title} · ${scopeText(delivery)} · 接收 ${delivery.recipients} 人`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="scroll-thin max-h-[52vh] overflow-auto rounded-md border border-border">
+            <Table className="text-[13px]">
+              <TableHeader>
+                <TableRow className="bg-muted/60">
+                  <TableHead className="w-28 pl-4">员工工号</TableHead>
+                  <TableHead className="w-24">员工姓名</TableHead>
+                  <TableHead className="w-28">员工公司</TableHead>
+                  <TableHead className="min-w-36">员工部门</TableHead>
+                  <TableHead className="w-40">发送时间</TableHead>
+                  <TableHead className="w-24 pr-4">是否成功</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {deliveryRows.length === 0 && (
+                  <TableEmpty colSpan={6} text="暂无发送明细" />
+                )}
+                {deliveryRows.map((d) => (
+                  <TableRow key={d.employeeNo}>
+                    <TableCell className="pl-4 font-mono text-xs">
+                      {d.employeeNo}
+                    </TableCell>
+                    <TableCell>{d.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.company}</TableCell>
+                    <TableCell className="text-muted-foreground">{d.dept}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {d.sentAt}
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <StatusTag tone={d.success ? 'success' : 'danger'}>
+                        {d.success ? '成功' : '失败'}
+                      </StatusTag>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 选择员工：支持工号/姓名/公司/部门关键字与在职状态筛选，可多选 */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>选择员工</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              className="w-56"
+              value={pickKeyword}
+              placeholder="工号 / 姓名 / 公司 / 部门"
+              aria-label="员工关键字"
+              onChange={(e) => setPickKeyword(e.target.value)}
+            />
+            <NativeSelect
+              aria-label="员工状态"
+              className="w-32"
+              value={pickStatus}
+              onChange={setPickStatus}
+              options={['全部状态', ...EMPLOYEE_STATUSES]}
+            />
+            <span className="ml-auto text-xs text-muted-foreground">
+              已选 {picked.length} 人
+            </span>
+          </div>
+
+          <div className="scroll-thin max-h-[46vh] overflow-auto rounded-md border border-border">
+            <Table className="text-[13px]">
+              <TableHeader>
+                <TableRow className="bg-muted/60">
+                  <TableHead className="w-10 pl-4">
+                    <Checkbox
+                      aria-label="全选筛选结果"
+                      checked={
+                        pickerRows.length > 0 &&
+                        pickerRows.every((e) => picked.includes(e.id))
+                      }
+                      onCheckedChange={(v) =>
+                        setPicked((prev) =>
+                          v
+                            ? Array.from(
+                                new Set([...prev, ...pickerRows.map((e) => e.id)]),
+                              )
+                            : prev.filter((id) => !pickerRows.some((e) => e.id === id)),
+                        )
+                      }
+                    />
+                  </TableHead>
+                  <TableHead className="w-28">员工工号</TableHead>
+                  <TableHead className="w-24">员工姓名</TableHead>
+                  <TableHead className="w-28">员工公司</TableHead>
+                  <TableHead className="min-w-36">员工部门</TableHead>
+                  <TableHead className="w-24 pr-4">员工状态</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pickerRows.length === 0 && (
+                  <TableEmpty colSpan={6} text="没有符合条件的员工" />
+                )}
+                {pickerRows.map((e) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="pl-4">
+                      <Checkbox
+                        aria-label={`选择员工 ${e.name}`}
+                        checked={picked.includes(e.id)}
+                        onCheckedChange={(v) =>
+                          setPicked((prev) =>
+                            v ? [...prev, e.id] : prev.filter((id) => id !== e.id),
+                          )
+                        }
+                      />
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{e.no}</TableCell>
+                    <TableCell>{e.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{e.company}</TableCell>
+                    <TableCell className="text-muted-foreground">{e.dept}</TableCell>
+                    <TableCell className="pr-4">
+                      <StatusTag tone={e.status === '在职' ? 'success' : 'neutral'}>
+                        {e.status}
+                      </StatusTag>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPickerOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={confirmPicker}>确定</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
