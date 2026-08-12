@@ -17,8 +17,14 @@ import * as React from 'react'
 
 /* ---------------- 类型 ---------------- */
 
-/** 员工状态：停用后不能登录 APP，但不影响历史内容 */
-export type StaffStatus = '启用' | '停用'
+/**
+ * 员工状态：任职状态，随用友 NC 主数据变化。
+ * 系统新建的部门发布账号统一视为「在职」。
+ */
+export type EmployeeStatus = '在职' | '退休' | '离职'
+
+/** 账号状态：本平台的登录开关，停用后不能登录 APP，但不影响历史内容 */
+export type AccountStatus = '启用' | '停用'
 
 /** 数据来源：决定该行是否可编辑 */
 export type StaffSource = 'NC同步' | '系统新建'
@@ -35,7 +41,10 @@ export type Staff = {
   dept: string
   /** 岗位 */
   position: string
-  status: StaffStatus
+  /** 员工状态：在职 / 退休 / 离职 */
+  employeeStatus: EmployeeStatus
+  /** 账号状态：启用 / 停用 */
+  accountStatus: AccountStatus
   source: StaffSource
   /** 同步时间：仅 NC同步 有值，系统新建为空 */
   syncedAt: string
@@ -47,7 +56,8 @@ export type Staff = {
   passwordResetAt: string
 }
 
-export const STAFF_STATUSES: StaffStatus[] = ['启用', '停用']
+export const EMPLOYEE_STATUSES: EmployeeStatus[] = ['在职', '退休', '离职']
+export const ACCOUNT_STATUSES: AccountStatus[] = ['启用', '停用']
 export const STAFF_SOURCES: StaffSource[] = ['NC同步', '系统新建']
 
 /** 系统新建部门发布账号的默认岗位 */
@@ -80,7 +90,12 @@ export const DEPTS_BY_COMPANY: Record<string, string[]> = {
 /** 全部部门（用于筛选下拉） */
 export const ALL_DEPTS = Array.from(new Set(Object.values(DEPTS_BY_COMPANY).flat()))
 
-export function statusTone(s: StaffStatus) {
+export function employeeStatusTone(s: EmployeeStatus) {
+  if (s === '在职') return 'success'
+  return s === '退休' ? 'info' : 'warning'
+}
+
+export function accountStatusTone(s: AccountStatus) {
   return s === '启用' ? 'success' : 'neutral'
 }
 
@@ -105,29 +120,30 @@ export function deptSignature(s: Pick<Staff, 'company' | 'dept'>) {
 
 /** NC 同步样本：工号与姓名沿用员工名册口径，保持全系统一致 */
 const SYNCED: Staff[] = [
-  ['SG10023', '汪筱', '陕鼓动力', '技术中心', '主任工程师', '启用'],
-  ['SG10057', '鹿鸣', '陕鼓动力', '能源互联事业部', '项目经理', '启用'],
-  ['SG10112', '陆东南', '陕鼓动力', '装备制造事业部', '工艺工程师', '启用'],
-  ['SG10189', '周敬', '陕鼓集团', '信息安全部', '安全管理员', '启用'],
-  ['SG10204', '孙可', '陕鼓集团', '平台管理部', '平台运营专员', '启用'],
-  ['SG10238', '王海涛', '陕鼓集团', '平台管理部', '部门副经理', '启用'],
-  ['SG10341', '李鸣泉', '陕鼓能源', '运维服务中心', '运维工程师', '启用'],
-  ['SG10402', '赵越', '陕鼓能源', '项目管理部', '项目专员', '启用'],
-  ['SG10455', '钱思远', '陕鼓智能', '研发一部', '算法工程师', '启用'],
-  ['SG10488', '许沐', '陕鼓智能', '研发二部', '软件工程师', '停用'],
-  ['SG09012', '何长庚', '陕鼓动力', '离退休服务中心', '退休职工', '启用'],
-  ['SG09044', '范秀英', '陕鼓动力', '离退休服务中心', '退休职工', '启用'],
-  ['SG09077', '邓怀安', '陕鼓集团', '离退休服务中心', '退休职工', '启用'],
-  ['SG09103', '柳文彬', '陕鼓集团', '离退休服务中心', '退休职工', '停用'],
-  ['SG09156', '梁玉兰', '陕鼓能源', '离退休服务中心', '退休职工', '启用'],
+  ['SG10023', '汪筱', '陕鼓动力', '技术中心', '主任工程师', '在职', '启用'],
+  ['SG10057', '鹿鸣', '陕鼓动力', '能源互联事业部', '项目经理', '在职', '启用'],
+  ['SG10112', '陆东南', '陕鼓动力', '装备制造事业部', '工艺工程师', '在职', '启用'],
+  ['SG10189', '周敬', '陕鼓集团', '信息安全部', '安全管理员', '在职', '启用'],
+  ['SG10204', '孙可', '陕鼓集团', '平台管理部', '平台运营专员', '在职', '启用'],
+  ['SG10238', '王海涛', '陕鼓集团', '平台管理部', '部门副经理', '在职', '启用'],
+  ['SG10341', '李鸣泉', '陕鼓能源', '运维服务中心', '运维工程师', '在职', '启用'],
+  ['SG10455', '钱思远', '陕鼓智能', '研发一部', '算法工程师', '在职', '启用'],
+  ['SG10402', '赵越', '陕鼓能源', '项目管理部', '项目专员', '离职', '停用'],
+  ['SG10488', '许沐', '陕鼓智能', '研发二部', '软件工程师', '离职', '停用'],
+  ['SG09012', '何长庚', '陕鼓动力', '离退休服务中心', '退休职工', '退休', '启用'],
+  ['SG09044', '范秀英', '陕鼓动力', '离退休服务中心', '退休职工', '退休', '启用'],
+  ['SG09077', '邓怀安', '陕鼓集团', '离退休服务中心', '退休职工', '退休', '启用'],
+  ['SG09103', '柳文彬', '陕鼓集团', '离退休服务中心', '退休职工', '退休', '停用'],
+  ['SG09156', '梁玉兰', '陕鼓能源', '离退休服务中心', '退休职工', '退休', '启用'],
 ].map((r, i) => {
-  const [code, name, company, dept, position, status] = r as [
+  const [code, name, company, dept, position, employeeStatus, accountStatus] = r as [
     string,
     string,
     string,
     string,
     string,
-    StaffStatus,
+    EmployeeStatus,
+    AccountStatus,
   ]
   return {
     id: `NC-${String(i + 1).padStart(2, '0')}`,
@@ -138,7 +154,8 @@ const SYNCED: Staff[] = [
     company,
     dept,
     position,
-    status,
+    employeeStatus,
+    accountStatus,
     source: 'NC同步' as StaffSource,
     syncedAt: '2025-12-01 02:00:00',
     createdAt: '2025-08-01 02:00:00',
@@ -160,14 +177,14 @@ const CUSTOM: Staff[] = [
   ['BM-YW001', '运维服务中心', '陕鼓能源', '部门职能调整，暂停发布权限', '周敬', '2025-09-30 13:20:00', '停用'],
   ['BM-YF002', '研发二部', '陕鼓智能', '编号录入有误，已停用待重建', '王海涛', '2025-11-05 17:02:00', '停用'],
 ].map((r, i) => {
-  const [code, dept, company, remark, createdBy, createdAt, status] = r as [
+  const [code, dept, company, remark, createdBy, createdAt, accountStatus] = r as [
     string,
     string,
     string,
     string,
     string,
     string,
-    StaffStatus,
+    AccountStatus,
   ]
   return {
     id: `SYS-${String(i + 1).padStart(2, '0')}`,
@@ -178,7 +195,9 @@ const CUSTOM: Staff[] = [
     company,
     dept,
     position: DEPT_PUBLISHER_POSITION,
-    status,
+    // 部门发布账号不是自然人，任职状态统一视为在职
+    employeeStatus: '在职' as EmployeeStatus,
+    accountStatus,
     source: '系统新建' as StaffSource,
     syncedAt: '',
     createdAt,
@@ -241,7 +260,7 @@ function nextId() {
  */
 export function findDeptPublisherByCode(code: string) {
   const hit = state.staff.find((s) => s.code === code.trim())
-  return hit && hit.source === '系统新建' && hit.status === '启用' ? hit : null
+  return hit && hit.source === '系统新建' && hit.accountStatus === '启用' ? hit : null
 }
 
 /* ---------------- 表单 ---------------- */
@@ -253,7 +272,8 @@ export type StaffDraft = {
   company: string
   dept: string
   position: string
-  status: StaffStatus
+  employeeStatus: EmployeeStatus
+  accountStatus: AccountStatus
   remark: string
 }
 
@@ -265,7 +285,8 @@ export const EMPTY_STAFF_DRAFT: StaffDraft = {
   company: '陕鼓集团',
   dept: '党群工作部',
   position: DEPT_PUBLISHER_POSITION,
-  status: '启用',
+  employeeStatus: '在职',
+  accountStatus: '启用',
   remark: '',
 }
 
@@ -308,7 +329,8 @@ export function createStaff(draft: StaffDraft, operator: string) {
     company: draft.company,
     dept: draft.dept,
     position: draft.position.trim(),
-    status: draft.status,
+    employeeStatus: draft.employeeStatus,
+    accountStatus: draft.accountStatus,
     source: '系统新建',
     syncedAt: '',
     createdAt: stamp(),
@@ -344,7 +366,8 @@ export function updateStaff(id: string, draft: StaffDraft) {
             company: draft.company,
             dept: draft.dept,
             position: draft.position.trim(),
-            status: draft.status,
+            employeeStatus: draft.employeeStatus,
+            accountStatus: draft.accountStatus,
             remark: draft.remark.trim(),
           }
         : s,
@@ -353,17 +376,17 @@ export function updateStaff(id: string, draft: StaffDraft) {
   return { ok: true as const, message: '员工信息已保存' }
 }
 
-/** 启用/停用：两种来源都允许，停用后立即失去 APP 登录资格 */
-export function toggleStaff(ids: string[], status: StaffStatus) {
+/** 启用/停用账号：两种来源都允许，停用后立即失去 APP 登录资格 */
+export function toggleStaff(ids: string[], accountStatus: AccountStatus) {
   if (ids.length === 0) return { ok: false as const, message: '请先选择要操作的记录' }
 
   commit({
-    staff: state.staff.map((s) => (ids.includes(s.id) ? { ...s, status } : s)),
+    staff: state.staff.map((s) => (ids.includes(s.id) ? { ...s, accountStatus } : s)),
   })
   return {
     ok: true as const,
     message:
-      status === '停用'
+      accountStatus === '停用'
         ? `已停用 ${ids.length} 名员工，其 APP 登录权限立即失效`
         : `已启用 ${ids.length} 名员工`,
   }

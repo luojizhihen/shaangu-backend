@@ -32,26 +32,29 @@ import {
 import { breadcrumbFor } from '@/lib/nav'
 import { downloadCsv } from '@/lib/export'
 import {
+  ACCOUNT_STATUSES,
+  accountStatusTone,
   ALL_DEPTS,
   COMPANIES,
   createStaff,
   DEPT_PUBLISHER_POSITION,
   DEPTS_BY_COMPANY,
+  EMPLOYEE_STATUSES,
+  employeeStatusTone,
   EMPTY_STAFF_DRAFT,
   isEditable,
   removeStaff,
   resetStaffPassword,
   sourceTone,
   STAFF_SOURCES,
-  STAFF_STATUSES,
-  statusTone,
   toggleStaff,
   updateStaff,
   useStaff,
   validateStaff,
+  type AccountStatus,
+  type EmployeeStatus,
   type Staff,
   type StaffDraft,
-  type StaffStatus,
 } from '@/lib/staff-store'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -73,7 +76,8 @@ import {
 } from '@/components/ui/table'
 
 const EMPTY_QUERY = {
-  status: '全部状态',
+  employeeStatus: '全部员工状态',
+  accountStatus: '全部账号状态',
   source: '全部来源',
   company: '全部公司',
   dept: '全部部门',
@@ -110,7 +114,8 @@ export default function StaffPage() {
   const { staff } = useStaff()
   const { role } = useApp()
 
-  const [status, setStatus] = React.useState('全部状态')
+  const [employeeStatus, setEmployeeStatus] = React.useState('全部员工状态')
+  const [accountStatus, setAccountStatus] = React.useState('全部账号状态')
   const [source, setSource] = React.useState('全部来源')
   const [company, setCompany] = React.useState('全部公司')
   const [dept, setDept] = React.useState('全部部门')
@@ -131,7 +136,12 @@ export default function StaffPage() {
     () =>
       staff.filter((s) => {
         const kw = query.keyword.trim().toUpperCase()
-        const hitStatus = query.status === '全部状态' || s.status === query.status
+        const hitEmp =
+          query.employeeStatus === '全部员工状态' ||
+          s.employeeStatus === query.employeeStatus
+        const hitAcc =
+          query.accountStatus === '全部账号状态' ||
+          s.accountStatus === query.accountStatus
         const hitSource = query.source === '全部来源' || s.source === query.source
         const hitCompany = query.company === '全部公司' || s.company === query.company
         const hitDept = query.dept === '全部部门' || s.dept === query.dept
@@ -140,7 +150,7 @@ export default function StaffPage() {
           s.code.includes(kw) ||
           s.name.toUpperCase().includes(kw) ||
           s.nickname.toUpperCase().includes(kw)
-        return hitStatus && hitSource && hitCompany && hitDept && hitKw
+        return hitEmp && hitAcc && hitSource && hitCompany && hitDept && hitKw
       }),
     [staff, query],
   )
@@ -149,12 +159,13 @@ export default function StaffPage() {
   const customCount = staff.filter((s) => s.source === '系统新建').length
 
   function search() {
-    setQuery({ status, source, company, dept, keyword })
+    setQuery({ employeeStatus, accountStatus, source, company, dept, keyword })
     table.setPage(1)
   }
 
   function reset() {
-    setStatus('全部状态')
+    setEmployeeStatus('全部员工状态')
+    setAccountStatus('全部账号状态')
     setSource('全部来源')
     setCompany('全部公司')
     setDept('全部部门')
@@ -182,7 +193,8 @@ export default function StaffPage() {
       company: s.company,
       dept: s.dept,
       position: s.position,
-      status: s.status,
+      employeeStatus: s.employeeStatus,
+      accountStatus: s.accountStatus,
       remark: s.remark,
     })
     setFormOpen(true)
@@ -225,7 +237,7 @@ export default function StaffPage() {
     toast.success(res.message)
   }
 
-  function batchToggle(next: StaffStatus) {
+  function batchToggle(next: AccountStatus) {
     const res = toggleStaff(table.selected, next)
     if (!res.ok) {
       toast.error(res.message)
@@ -235,8 +247,8 @@ export default function StaffPage() {
     toast.success(res.message)
   }
 
-  /** 单行启用/停用：两种来源都允许 */
-  function toggleOne(s: Staff, next: StaffStatus) {
+  /** 单行启用/停用账号：两种来源都允许 */
+  function toggleOne(s: Staff, next: AccountStatus) {
     const res = toggleStaff([s.id], next)
     if (!res.ok) {
       toast.error(res.message)
@@ -287,9 +299,17 @@ export default function StaffPage() {
         <FilterField label="员工状态">
           <NativeSelect
             aria-label="员工状态"
-            value={status}
-            onChange={setStatus}
-            options={['全部状态', ...STAFF_STATUSES]}
+            value={employeeStatus}
+            onChange={setEmployeeStatus}
+            options={['全部员工状态', ...EMPLOYEE_STATUSES]}
+          />
+        </FilterField>
+        <FilterField label="账号状态">
+          <NativeSelect
+            aria-label="账号状态"
+            value={accountStatus}
+            onChange={setAccountStatus}
+            options={['全部账号状态', ...ACCOUNT_STATUSES]}
           />
         </FilterField>
         <FilterField label="数据来源">
@@ -376,9 +396,9 @@ export default function StaffPage() {
                     '部门',
                     '岗位',
                     '员工状态',
+                    '账号状态',
                     '同步时间',
                     '创建时间',
-                    '数据来源',
                     '备注',
                   ],
                   rows.map((s) => [
@@ -388,11 +408,11 @@ export default function StaffPage() {
                     s.company,
                     s.dept,
                     s.position,
-                    s.status,
+                    s.employeeStatus,
+                    s.accountStatus,
                     s.syncedAt || '—',
                     s.createdAt,
                     s.source,
-                    s.remark || '—',
                   ]),
                 )
                 toast.success(`已导出 ${rows.length} 条记录`)
@@ -424,15 +444,16 @@ export default function StaffPage() {
                 <TableHead className="w-32">部门</TableHead>
                 <TableHead className="w-28">岗位</TableHead>
                 <TableHead className="w-20">员工状态</TableHead>
+                <TableHead className="w-20">账号状态</TableHead>
                 <TableHead className="w-36">同步时间</TableHead>
                 <TableHead className="w-36">创建时间</TableHead>
-                <TableHead className="min-w-48">备注</TableHead>
+                <TableHead className="w-28">备注</TableHead>
                 <TableHead className="w-44 pr-4 text-center">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {table.pageRows.length === 0 && (
-                <TableEmpty colSpan={12} text="没有符合条件的员工" />
+                <TableEmpty colSpan={13} text="没有符合条件的员工" />
               )}
               {table.pageRows.map((s) => {
                 const editable = isEditable(s)
@@ -454,7 +475,14 @@ export default function StaffPage() {
                     <TableCell className="text-muted-foreground">{s.dept}</TableCell>
                     <TableCell className="text-muted-foreground">{s.position}</TableCell>
                     <TableCell>
-                      <StatusTag tone={statusTone(s.status)}>{s.status}</StatusTag>
+                      <StatusTag tone={employeeStatusTone(s.employeeStatus)}>
+                        {s.employeeStatus}
+                      </StatusTag>
+                    </TableCell>
+                    <TableCell>
+                      <StatusTag tone={accountStatusTone(s.accountStatus)}>
+                        {s.accountStatus}
+                      </StatusTag>
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.syncedAt || '—'}
@@ -462,14 +490,9 @@ export default function StaffPage() {
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.createdAt}
                     </TableCell>
-                    {/* 备注列同时承载数据来源标签，工号列只保留纯工号 */}
-                    <TableCell>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <StatusTag tone={sourceTone(s.source)}>{s.source}</StatusTag>
-                        {s.remark && (
-                          <span className="text-xs text-muted-foreground">{s.remark}</span>
-                        )}
-                      </div>
+                    {/* 备注列只显示数据来源；备注正文移到悬浮提示，避免列内信息过载 */}
+                    <TableCell title={s.remark || undefined}>
+                      <StatusTag tone={sourceTone(s.source)}>{s.source}</StatusTag>
                     </TableCell>
                     <TableCell className="pr-4">
                       <div className="flex items-center justify-center gap-1">
@@ -488,10 +511,10 @@ export default function StaffPage() {
                           size="xs"
                           variant="outline"
                           onClick={() =>
-                            toggleOne(s, s.status === '启用' ? '停用' : '启用')
+                            toggleOne(s, s.accountStatus === '启用' ? '停用' : '启用')
                           }
                         >
-                          {s.status === '启用' ? '停用' : '启用'}
+                          {s.accountStatus === '启用' ? '停用' : '启用'}
                         </Button>
                         <Button
                           size="xs"
@@ -585,9 +608,23 @@ export default function StaffPage() {
               <NativeSelect
                 aria-label="员工状态"
                 className="w-32"
-                value={draft.status}
-                onChange={(v) => setDraft((d) => ({ ...d, status: v as StaffStatus }))}
-                options={STAFF_STATUSES}
+                value={draft.employeeStatus}
+                onChange={(v) =>
+                  setDraft((d) => ({ ...d, employeeStatus: v as EmployeeStatus }))
+                }
+                options={EMPLOYEE_STATUSES}
+              />
+            </FormRow>
+
+            <FormRow label="账号状态" required>
+              <NativeSelect
+                aria-label="账号状态"
+                className="w-32"
+                value={draft.accountStatus}
+                onChange={(v) =>
+                  setDraft((d) => ({ ...d, accountStatus: v as AccountStatus }))
+                }
+                options={ACCOUNT_STATUSES}
               />
             </FormRow>
 
