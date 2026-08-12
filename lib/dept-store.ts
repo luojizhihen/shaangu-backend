@@ -5,13 +5,13 @@ import * as React from 'react'
 /**
  * 部门管理数据源。
  *
- * 组织主数据来自用友 NC，本系统只读：
- * - 名称、编码、上级组织不允许在本平台修改；
- * - 「是否使用」「显示排序」属于本平台的展示配置，两种来源都可维护。
+ * 组织主数据全部来自用友 NC，本平台不提供新建部门能力：
+ * - 名称、编码、上级组织、负责人均为 NC 同步字段，本平台只读；
+ * - 「是否使用」「显示排序」属于本平台的展示配置，可在本平台维护。
  */
 
-/** 数据来源：NC 同步 或 本平台新建 */
-export type DeptSource = 'NC同步' | '系统新建'
+/** 组织数据统一来自用友 NC，备注列固定展示该标识 */
+export const DEPT_SOURCE_LABEL = 'NC同步'
 
 /** 节点类型：组织（公司）或部门 */
 export type DeptKind = '公司' | '部门'
@@ -28,28 +28,16 @@ export type Dept = {
   used: boolean
   /** 显示排序，未设置为空 */
   order: number | null
-  source: DeptSource
   /** 负责人，NC 未同步时为空 */
   owner: string
   syncedAt: string
-  createdAt: string
 }
 
 export const DEPT_KINDS: DeptKind[] = ['公司', '部门']
-export const DEPT_SOURCES: DeptSource[] = ['NC同步', '系统新建']
 export const USED_LABELS = ['已使用', '未使用'] as const
-
-export function sourceTone(s: DeptSource) {
-  return s === 'NC同步' ? 'neutral' : 'info'
-}
 
 export function usedTone(used: boolean) {
   return used ? 'success' : 'neutral'
-}
-
-/** NC 同步的组织主数据在本系统只读 */
-export function isNameEditable(d: Dept) {
-  return d.source === '系统新建'
 }
 
 /* ---------------- 种子数据：按 NC 组织树录入 ---------------- */
@@ -92,6 +80,10 @@ const NC_ROWS: Row[] = [
   ['00B027', '综合能源事业部', '00', '部门', true, '鹿鸣'],
   ['00B028', '采购事业部', '00', '部门', true, '章明'],
   ['00B008', '质量管理部', '00', '部门', true, '陆东南'],
+  ['00B051', '平台管理部-1', '00', '部门', true, '孙可'],
+  ['00B052', '测试部门', '00', '部门', true, '周敬'],
+  ['00B0521', '测试一组', '00B052', '部门', true, '周敬'],
+  ['00B0522', '测试二组', '00B052', '部门', false, ''],
 
   // 陕鼓动力及其下属组织
   ['01', '西安陕鼓动力股份有限公司', null, '公司', true, '陈党民'],
@@ -139,6 +131,7 @@ const NC_ROWS: Row[] = [
 
 /** NC 同步节点的显示排序：由平台配置，默认留空 */
 const NC_ORDER: Record<string, number> = {
+  '00B051': 1,
   '00B001': 2,
   '00B002': 3,
   '00B038': 4,
@@ -146,7 +139,7 @@ const NC_ORDER: Record<string, number> = {
   '00B006': 6,
 }
 
-const SYNCED: Dept[] = NC_ROWS.map(([code, name, parentId, kind, used, owner]) => ({
+const SEED: Dept[] = NC_ROWS.map(([code, name, parentId, kind, used, owner]) => ({
   id: code,
   code,
   name,
@@ -154,69 +147,9 @@ const SYNCED: Dept[] = NC_ROWS.map(([code, name, parentId, kind, used, owner]) =
   parentId,
   used,
   order: NC_ORDER[code] ?? null,
-  source: 'NC同步' as DeptSource,
   owner,
   syncedAt: SYNC_STAMP,
-  createdAt: SYNC_STAMP,
 }))
-
-/** 本平台新建的部门：用于 APP 端的发布口径，不回写 NC */
-const CUSTOM: Dept[] = [
-  {
-    id: 'LOCAL-01',
-    code: 'LOCAL-01',
-    name: '平台管理部-1',
-    kind: '部门',
-    parentId: '00',
-    used: true,
-    order: 1,
-    source: '系统新建',
-    owner: '孙可',
-    syncedAt: '',
-    createdAt: '2026-06-18 09:24:10',
-  },
-  {
-    id: 'LOCAL-02',
-    code: 'LOCAL-02',
-    name: '测试部门',
-    kind: '部门',
-    parentId: '00',
-    used: true,
-    order: null,
-    source: '系统新建',
-    owner: '周敬',
-    syncedAt: '',
-    createdAt: '2026-07-02 14:36:51',
-  },
-  {
-    id: 'LOCAL-0201',
-    code: 'LOCAL-0201',
-    name: '测试一组',
-    kind: '部门',
-    parentId: 'LOCAL-02',
-    used: true,
-    order: null,
-    source: '系统新建',
-    owner: '周敬',
-    syncedAt: '',
-    createdAt: '2026-07-02 14:38:20',
-  },
-  {
-    id: 'LOCAL-0202',
-    code: 'LOCAL-0202',
-    name: '测试二组',
-    kind: '部门',
-    parentId: 'LOCAL-02',
-    used: false,
-    order: null,
-    source: '系统新建',
-    owner: '',
-    syncedAt: '',
-    createdAt: '2026-07-02 14:39:02',
-  },
-]
-
-const SEED: Dept[] = [...SYNCED, ...CUSTOM]
 
 /* ---------------- store ---------------- */
 
@@ -286,7 +219,6 @@ function ancestorsOf(d: Dept, byId: Map<string, Dept>) {
 export type DeptQuery = {
   keyword: string
   used: string
-  source: string
   kind: string
 }
 
@@ -302,10 +234,7 @@ export function buildRows(
   const byId = new Map(depts.map((d) => [d.id, d]))
   const kw = query.keyword.trim().toLowerCase()
   const filtering =
-    kw !== '' ||
-    query.used !== '全部' ||
-    query.source !== '全部来源' ||
-    query.kind !== '全部类型'
+    kw !== '' || query.used !== '全部' || query.kind !== '全部类型'
 
   const matchedIds = new Set<string>()
   depts.forEach((d) => {
@@ -315,9 +244,8 @@ export function buildRows(
       d.code.toLowerCase().includes(kw)
     const hitUsed =
       query.used === '全部' || (query.used === '已使用') === d.used
-    const hitSource = query.source === '全部来源' || d.source === query.source
     const hitKind = query.kind === '全部类型' || d.kind === query.kind
-    if (hitKw && hitUsed && hitSource && hitKind) matchedIds.add(d.id)
+    if (hitKw && hitUsed && hitKind) matchedIds.add(d.id)
   })
 
   // 命中节点的祖先需要保留并强制展开
@@ -385,7 +313,7 @@ export function childCount(depts: Dept[], id: string) {
 
 /* ---------------- 变更操作 ---------------- */
 
-/** 批量设置是否使用：属于平台展示配置，NC 同步节点同样可维护 */
+/** 批量设置是否使用：属于平台展示配置，不回写用友 NC */
 export function setDeptUsed(ids: string[], used: boolean) {
   if (ids.length === 0) return { ok: false as const, message: '请先选择要操作的部门' }
 

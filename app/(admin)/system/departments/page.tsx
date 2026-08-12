@@ -28,12 +28,10 @@ import {
   buildRows,
   childCount,
   DEPT_KINDS,
-  DEPT_SOURCES,
-  isNameEditable,
+  DEPT_SOURCE_LABEL,
   pathOf,
   setDeptOrder,
   setDeptUsed,
-  sourceTone,
   usedTone,
   useDepts,
   type Dept,
@@ -61,7 +59,6 @@ import {
 const EMPTY_QUERY: DeptQuery = {
   keyword: '',
   used: '全部',
-  source: '全部来源',
   kind: '全部类型',
 }
 
@@ -81,7 +78,6 @@ export default function DepartmentsPage() {
 
   const [keyword, setKeyword] = React.useState('')
   const [used, setUsed] = React.useState('全部')
-  const [source, setSource] = React.useState('全部来源')
   const [kind, setKind] = React.useState('全部类型')
   const [query, setQuery] = React.useState<DeptQuery>(EMPTY_QUERY)
 
@@ -103,19 +99,15 @@ export default function DepartmentsPage() {
   const allChecked = rows.length > 0 && rows.every((r) => validSelected.includes(r.dept.id))
 
   const filtering =
-    query.keyword !== '' ||
-    query.used !== '全部' ||
-    query.source !== '全部来源' ||
-    query.kind !== '全部类型'
+    query.keyword !== '' || query.used !== '全部' || query.kind !== '全部类型'
 
   function search() {
-    setQuery({ keyword, used, source, kind })
+    setQuery({ keyword, used, kind })
   }
 
   function reset() {
     setKeyword('')
     setUsed('全部')
-    setSource('全部来源')
     setKind('全部类型')
     setQuery(EMPTY_QUERY)
     setExpanded(new Set(['00', '01']))
@@ -206,14 +198,6 @@ export default function DepartmentsPage() {
             options={['全部类型', ...DEPT_KINDS]}
           />
         </FilterField>
-        <FilterField label="数据来源">
-          <NativeSelect
-            aria-label="数据来源"
-            value={source}
-            onChange={setSource}
-            options={['全部来源', ...DEPT_SOURCES]}
-          />
-        </FilterField>
       </FilterBar>
 
       <Panel bodyClassName="p-0">
@@ -255,7 +239,7 @@ export default function DepartmentsPage() {
               onClick={() => {
                 downloadCsv(
                   '部门管理.csv',
-                  ['组织编码', '部门名称', '节点类型', '上级组织', '是否使用', '显示排序', 'NC同步', '负责人'],
+                  ['组织编码', '部门名称', '节点类型', '上级组织', '是否使用', '显示排序', '备注', '负责人'],
                   depts.map((d) => {
                     const trail = pathOf(depts, d)
                     return [
@@ -265,7 +249,7 @@ export default function DepartmentsPage() {
                       trail.length > 1 ? trail[trail.length - 2] : '—',
                       d.used ? '已使用' : '未使用',
                       d.order === null ? '' : d.order,
-                      d.source,
+                      DEPT_SOURCE_LABEL,
                       d.owner || '—',
                     ]
                   }),
@@ -295,7 +279,7 @@ export default function DepartmentsPage() {
                 <TableHead className="min-w-72">部门名称</TableHead>
                 <TableHead className="w-24">是否使用</TableHead>
                 <TableHead className="w-24">显示排序</TableHead>
-                <TableHead className="w-28">NC同步</TableHead>
+                <TableHead className="w-28">备注</TableHead>
                 <TableHead className="w-32 pr-4 text-center">操作</TableHead>
               </TableRow>
             </TableHeader>
@@ -368,7 +352,7 @@ export default function DepartmentsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <StatusTag tone={sourceTone(d.source)}>{d.source}</StatusTag>
+                        <StatusTag tone="neutral">{DEPT_SOURCE_LABEL}</StatusTag>
                       </TableCell>
                       <TableCell className="pr-4">
                         <div className="flex items-center justify-center gap-1">
@@ -428,20 +412,15 @@ export default function DepartmentsPage() {
               <DetailRow label="显示排序">
                 {detail.order === null ? '未设置' : detail.order}
               </DetailRow>
-              <DetailRow label="NC同步">
-                <StatusTag tone={sourceTone(detail.source)}>{detail.source}</StatusTag>
+              <DetailRow label="备注">
+                <StatusTag tone="neutral">{DEPT_SOURCE_LABEL}</StatusTag>
               </DetailRow>
               <DetailRow label="同步时间">
-                <span className="font-mono text-xs">{detail.syncedAt || '—'}</span>
+                <span className="font-mono text-xs">{detail.syncedAt}</span>
               </DetailRow>
-              <DetailRow label="创建时间">
-                <span className="font-mono text-xs">{detail.createdAt}</span>
-              </DetailRow>
-              {!isNameEditable(detail) && (
-                <p className="pt-3 text-xs text-muted-foreground">
-                  组织主数据由用友 NC 同步，名称与层级在本平台只读。
-                </p>
-              )}
+              <p className="pt-3 text-xs text-muted-foreground">
+                组织主数据由用友 NC 同步，名称、编码与层级在本平台只读，仅「是否使用」「显示排序」可维护。
+              </p>
             </div>
           )}
           <DialogFooter>
