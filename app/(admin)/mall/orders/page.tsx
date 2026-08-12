@@ -354,7 +354,7 @@ export default function MallOrdersPage() {
           )}
 
           <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            积分与库存已在会员兑换时结算，本次确认��登记领取事实，不会再次改动积分或库存；
+            积分与库存已在会员兑换时结算，本次确认仅登记领取事实，不会再次改动积分或库存；
             确认人将记录为 <span className="text-foreground">{role.person}</span>。
           </p>
 

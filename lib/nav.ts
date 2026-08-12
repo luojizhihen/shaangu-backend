@@ -259,7 +259,7 @@ export const MENU: MenuGroup[] = [
     title: '运营服务',
     icon: Bell,
     children: [
-      { title: '站内消息管理', path: '/messages', perm: 'messages' },
+      { title: '消息管理', path: '/messages', perm: 'messages' },
       { title: '意见反馈管理', path: '/feedback', perm: 'feedback' },
     ],
   },
