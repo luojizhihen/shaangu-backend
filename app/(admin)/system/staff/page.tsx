@@ -35,7 +35,6 @@ import {
   ALL_DEPTS,
   COMPANIES,
   createStaff,
-  deptSignature,
   DEPT_PUBLISHER_POSITION,
   DEPTS_BY_COMPANY,
   EMPTY_STAFF_DRAFT,
@@ -277,16 +276,10 @@ export default function StaffPage() {
         breadcrumb={breadcrumbFor(pathname)}
         title="员工管理"
         actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={openCreate}>
-              <Plus className="size-4" />
-              新增
-            </Button>
-          </>
+          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
+            <RefreshCcw className="size-4" />
+            刷新
+          </Button>
         }
       />
 
@@ -338,6 +331,10 @@ export default function StaffPage() {
       <div className="pb-4">
         <Panel bodyClassName="p-0">
           <Toolbar>
+            <Button size="sm" onClick={openCreate}>
+              <Plus className="size-3.5" />
+              新增
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -410,7 +407,7 @@ export default function StaffPage() {
             </span>
           </Toolbar>
 
-          <Table className="min-w-[1180px] text-[13px]">
+          <Table className="min-w-[1380px] text-[13px]">
             <TableHeader>
               <TableRow className="bg-muted/60">
                 <TableHead className="w-10 pl-4">
@@ -429,12 +426,13 @@ export default function StaffPage() {
                 <TableHead className="w-20">员工状态</TableHead>
                 <TableHead className="w-36">同步时间</TableHead>
                 <TableHead className="w-36">创建时间</TableHead>
+                <TableHead className="min-w-48">备注</TableHead>
                 <TableHead className="w-44 pr-4 text-center">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {table.pageRows.length === 0 && (
-                <TableEmpty colSpan={11} text="没有符合条件的员工" />
+                <TableEmpty colSpan={12} text="没有符合条件的员工" />
               )}
               {table.pageRows.map((s) => {
                 const editable = isEditable(s)
@@ -447,12 +445,7 @@ export default function StaffPage() {
                         onCheckedChange={(v) => table.toggleRow(s.id, Boolean(v))}
                       />
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-mono text-xs">{s.code}</span>
-                        <StatusTag tone={sourceTone(s.source)}>{s.source}</StatusTag>
-                      </div>
-                    </TableCell>
+                    <TableCell className="font-mono text-xs">{s.code}</TableCell>
                     <TableCell>{s.name}</TableCell>
                     <TableCell className={s.nickname ? '' : 'text-muted-foreground'}>
                       {s.nickname || '—'}
@@ -468,6 +461,15 @@ export default function StaffPage() {
                     </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">
                       {s.createdAt}
+                    </TableCell>
+                    {/* 备注列同时承载数据来源标签，工号列只保留纯工号 */}
+                    <TableCell>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <StatusTag tone={sourceTone(s.source)}>{s.source}</StatusTag>
+                        {s.remark && (
+                          <span className="text-xs text-muted-foreground">{s.remark}</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="pr-4">
                       <div className="flex items-center justify-center gap-1">
@@ -526,11 +528,7 @@ export default function StaffPage() {
           </DialogHeader>
 
           <div className="flex flex-col gap-3">
-            <FormRow
-              label="员工工号"
-              required
-              hint="支持录入部门公用工号（如 BM-DQ001），全表唯一，作为 APP 登录账号。"
-            >
+            <FormRow label="员工工号" required>
               <Input
                 value={draft.code}
                 placeholder="如 BM-DQ001"
@@ -561,14 +559,14 @@ export default function StaffPage() {
               />
             </FormRow>
 
-            <FormRow label="员工姓名" required hint="默认取部门名称，可按需改写。">
+            <FormRow label="员工姓名" required>
               <Input
                 value={draft.name}
                 onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
               />
             </FormRow>
 
-            <FormRow label="昵称" required hint="默认取部门名称，APP 内展示此名称。">
+            <FormRow label="昵称" required>
               <Input
                 value={draft.nickname}
                 onChange={(e) => setDraft((d) => ({ ...d, nickname: e.target.value }))}
@@ -583,11 +581,7 @@ export default function StaffPage() {
               />
             </FormRow>
 
-            <FormRow
-              label="员工状态"
-              required
-              hint="停用后立即失去 APP 登录资格，历史已发布内容署名保持不变。"
-            >
+            <FormRow label="员工状态" required>
               <NativeSelect
                 aria-label="员工状态"
                 className="w-32"
@@ -608,19 +602,9 @@ export default function StaffPage() {
               />
             </FormRow>
 
-            <div className="rounded-md border border-border bg-muted/40 p-3">
-              <p className="text-xs text-muted-foreground">APP 发布署名预览</p>
-              <p className="mt-1.5 text-[13px]">
-                <span className="font-medium">{draft.nickname.trim() || '昵称'}</span>
-                <span className="mx-1.5 text-muted-foreground">·</span>
-                <StatusTag tone="info">
-                  {deptSignature({ company: draft.company, dept: draft.dept })}
-                </StatusTag>
-              </p>
-              {issues.length > 0 && (
-                <p className="mt-2 text-xs text-destructive">{issues[0]}</p>
-              )}
-            </div>
+            {issues.length > 0 && (
+              <p className="text-xs text-destructive sm:pl-23">{issues[0]}</p>
+            )}
           </div>
 
           <DialogFooter>
@@ -663,7 +647,6 @@ export default function StaffPage() {
           <p className="text-[13px] leading-relaxed text-muted-foreground">
             将重置 <span className="font-mono">{resetTarget?.code}</span>（
             {resetTarget?.name}）的 APP 登录密码为初始密码，该员工下次登录须修改。
-            仅重置本平台密码，不回写用友 NC。
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setResetTarget(null)}>
