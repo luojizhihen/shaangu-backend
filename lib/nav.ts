@@ -64,6 +64,7 @@ export const ROLES: Role[] = [
       'messages',
       'feedback',
       'system.users',
+      'system.staff',
       'system.depts',
       'logs.online',
       'logs.login',
@@ -144,6 +145,7 @@ export const ROLES: Role[] = [
       'workbench',
       'system.menus',
       'system.users',
+      'system.staff',
       'system.roles',
       'system.params',
       'system.codes',
@@ -259,7 +261,7 @@ export const MENU: MenuGroup[] = [
     title: '运营服务',
     icon: Bell,
     children: [
-      { title: '站内消息管理', path: '/messages', perm: 'messages' },
+      { title: '消息管理', path: '/messages', perm: 'messages' },
       { title: '意见反馈管理', path: '/feedback', perm: 'feedback' },
     ],
   },
@@ -269,6 +271,7 @@ export const MENU: MenuGroup[] = [
     children: [
       { title: '菜单管理', path: '/system/menus', perm: 'system.menus' },
       { title: '用户管理', path: '/system/users', perm: 'system.users' },
+      { title: '员工管理', path: '/system/staff', perm: 'system.staff' },
       { title: '角色管理', path: '/system/roles', perm: 'system.roles' },
       { title: '参数管理', path: '/system/params', perm: 'system.params' },
       { title: '通用代码', path: '/system/codes', perm: 'system.codes' },

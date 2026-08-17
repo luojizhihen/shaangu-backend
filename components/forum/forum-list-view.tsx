@@ -107,7 +107,7 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
     const filtered = scoped.filter((p) => {
       const hitTitle = p.title.includes(query.title.trim())
       const kw = query.person.trim()
-      const hitPerson = !kw || p.nickname.includes(kw) || p.author.includes(kw)
+      const hitPerson = !kw || p.nickname.includes(kw)
       // 发布来源与内容类型是两个完全独立的筛选维度
       const hitSource = query.source === '全部' || p.source === query.source
       const hitType = query.type === '全部' || p.type === query.type
@@ -173,10 +173,6 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
   function displayNickname(p: ForumPost) {
     if (p.source !== '管理端发布') return p.nickname
     return p.official ? p.nickname : role.person
-  }
-
-  function displayAuthor(p: ForumPost) {
-    return p.source === '管理端发布' ? role.person : p.author
   }
 
   function detailHref(p: ForumPost) {
@@ -278,7 +274,7 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
         <FilterField label="发帖人">
           <Input
             value={person}
-            placeholder="请输入昵称或员工姓名"
+            placeholder="请输入发帖人昵称"
             onChange={(e) => setPerson(e.target.value)}
           />
         </FilterField>
@@ -352,14 +348,7 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
               <TableHead className="min-w-72">标题</TableHead>
               {!isPoll && <TableHead className="w-24">内容类型</TableHead>}
               <TableHead className="w-28">发布来源</TableHead>
-              {isPoll ? (
-                <TableHead className="w-32">发帖人</TableHead>
-              ) : (
-                <>
-                  <TableHead className="w-32">发帖人昵称</TableHead>
-                  <TableHead className="w-28">发帖人姓名</TableHead>
-                </>
-              )}
+              <TableHead className="w-32">发帖人昵称</TableHead>
               <TableHead className="w-24">发布状态</TableHead>
               <TableHead className="w-24">展示状态</TableHead>
               <TableHead className="w-20">置顶</TableHead>
@@ -375,7 +364,7 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
           <TableBody>
             {table.pageRows.length === 0 && (
               <TableEmpty
-                colSpan={isPoll ? 13 : 15}
+                colSpan={isPoll ? 13 : 14}
                 text={isPoll ? '没有符合条件的投票内容' : '没有符合条件的帖子'}
               />
             )}
@@ -433,32 +422,11 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
                       {p.source}
                     </StatusTag>
                   </TableCell>
-                  {isPoll ? (
-                    <TableCell>
-                      <span
-                        className="block truncate"
-                        title={`${p.nickname} / ${p.author}`}
-                      >
-                        {p.nickname}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {p.author} · {p.dept}
-                      </span>
-                    </TableCell>
-                  ) : (
-                    <>
-                      <TableCell>
-                        <span className="block truncate" title={displayNickname(p)}>
-                          {displayNickname(p)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="block truncate" title={displayAuthor(p)}>
-                          {displayAuthor(p)}
-                        </span>
-                      </TableCell>
-                    </>
-                  )}
+                  <TableCell>
+                    <span className="block truncate" title={displayNickname(p)}>
+                      {displayNickname(p)}
+                    </span>
+                  </TableCell>
                   <TableCell>
                     <StatusTag tone={statusTone(p.status)}>{p.status}</StatusTag>
                   </TableCell>

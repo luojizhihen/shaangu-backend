@@ -25,3 +25,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 本地项目压缩包备份，不纳入版本控制
+*.zip
+
+# Kiro 本地工作目录（steering、spec、素材），不纳入版本控制
+.kiro/

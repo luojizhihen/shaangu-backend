@@ -191,7 +191,6 @@ export default function MallProductDetailPage() {
                 <TableRow className="bg-muted/60">
                   <TableHead className="w-40 pl-4">订单编号</TableHead>
                   <TableHead className="w-20">订单状态</TableHead>
-                  <TableHead className="w-28">昵称</TableHead>
                   <TableHead className="w-24">员工姓名</TableHead>
                   <TableHead className="w-20">数量</TableHead>
                   <TableHead className="w-24">订单消耗积分</TableHead>
@@ -201,7 +200,7 @@ export default function MallProductDetailPage() {
               </TableHeader>
               <TableBody>
                 {table.pageRows.length === 0 && (
-                  <TableEmpty colSpan={8} text="该商品暂无兑换订单" />
+                  <TableEmpty colSpan={7} text="该商品暂无兑换订单" />
                 )}
                 {table.pageRows.map((o) => (
                   <TableRow key={o.id}>
@@ -209,7 +208,7 @@ export default function MallProductDetailPage() {
                     <TableCell>
                       <StatusTag tone={orderStatusTone(o.status)}>{o.status}</StatusTag>
                     </TableCell>
-                    <TableCell>{o.nickname}</TableCell>
+
                     <TableCell>{o.employee}</TableCell>
                     <TableCell className="text-xs">
                       <span className="font-mono">{o.quantity}</span> {o.unit}

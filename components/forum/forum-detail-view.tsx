@@ -188,7 +188,7 @@ export function ForumDetailView({
               <span>{post.nickname}</span>
               <span>·</span>
               <span>
-                {post.author}（{post.employeeNo}） · {post.dept}
+                {post.employeeNo} · {post.dept}
               </span>
               <StatusTag tone={post.personStatus === '在职' ? 'success' : 'neutral'}>
                 {post.personStatus}
@@ -238,7 +238,9 @@ export function ForumDetailView({
               <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Vote className="size-3.5" />
-                  {post.poll.mode} · {post.poll.optionMode}选项
+                  {post.poll.mode}
+                  {post.poll.mode === '多选' && `（最多 ${post.poll.maxChoices} 项）`} ·{' '}
+                  {post.poll.optionMode}选项
                 </span>
                 <span className="flex items-center gap-1">
                   <CalendarClock className="size-3.5" />
@@ -353,6 +355,14 @@ export function ForumDetailView({
             <InfoRow label="评论量" value={post.commentCount} />
             {isPoll && post.poll && (
               <>
+                <InfoRow
+                  label="投票模式"
+                  value={
+                    post.poll.mode === '多选'
+                      ? `多选（最多 ${post.poll.maxChoices} 项）`
+                      : '单选'
+                  }
+                />
                 <InfoRow
                   label="参与人数"
                   value={post.poll.participants.toLocaleString('zh-CN')}

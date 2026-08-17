@@ -53,7 +53,6 @@ import {
 const EMPTY_QUERY = {
   status: '全部状态',
   orderNo: '',
-  nickname: '',
   employee: '',
 }
 
@@ -74,7 +73,6 @@ export default function MallOrdersPage() {
 
   const [status, setStatus] = React.useState('全部状态')
   const [orderNo, setOrderNo] = React.useState('')
-  const [nickname, setNickname] = React.useState('')
   const [employee, setEmployee] = React.useState('')
   const [query, setQuery] = React.useState(EMPTY_QUERY)
   const [target, setTarget] = React.useState<MallOrder | null>(null)
@@ -84,9 +82,8 @@ export default function MallOrdersPage() {
       orders.filter((o) => {
         const hitStatus = query.status === '全部状态' || o.status === query.status
         const hitOrderNo = o.orderNo.includes(query.orderNo.trim())
-        const hitNickname = o.nickname.includes(query.nickname.trim())
         const hitEmployee = o.employee.includes(query.employee.trim())
-        return hitStatus && hitOrderNo && hitNickname && hitEmployee
+        return hitStatus && hitOrderNo && hitEmployee
       }),
     [orders, query],
   )
@@ -95,14 +92,13 @@ export default function MallOrdersPage() {
   const pending = orders.filter((o) => o.status === '待领取').length
 
   function search() {
-    setQuery({ status, orderNo, nickname, employee })
+    setQuery({ status, orderNo, employee })
     table.setPage(1)
   }
 
   function reset() {
     setStatus('全部状态')
     setOrderNo('')
-    setNickname('')
     setEmployee('')
     setQuery(EMPTY_QUERY)
   }
@@ -148,16 +144,6 @@ export default function MallOrdersPage() {
             }}
           />
         </FilterField>
-        <FilterField label="昵称">
-          <Input
-            value={nickname}
-            placeholder="请输入昵称"
-            onChange={(e) => setNickname(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
-            }}
-          />
-        </FilterField>
         <FilterField label="员工姓名">
           <Input
             value={employee}
@@ -181,7 +167,6 @@ export default function MallOrdersPage() {
                 [
                   '订单编号',
                   '订单状态',
-                  '昵称',
                   '员工姓名',
                   '所属部门',
                   '商品名称',
@@ -196,7 +181,6 @@ export default function MallOrdersPage() {
                 rows.map((o) => [
                   o.orderNo,
                   o.status,
-                  o.nickname,
                   o.employee,
                   o.dept,
                   o.productName,
@@ -226,7 +210,6 @@ export default function MallOrdersPage() {
               <TableHead className="w-14 pl-4">序号</TableHead>
               <TableHead className="w-20">订单状态</TableHead>
               <TableHead className="w-40">订单编号</TableHead>
-              <TableHead className="w-28">昵称</TableHead>
               <TableHead className="w-24">员工姓名</TableHead>
               <TableHead className="min-w-36">商品名称</TableHead>
               <TableHead className="w-40">商品编号</TableHead>
@@ -241,7 +224,7 @@ export default function MallOrdersPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={14} text="没有符合条件的订单" />
+              <TableEmpty colSpan={13} text="没有符合条件的订单" />
             )}
             {table.pageRows.map((o, i) => (
               <TableRow key={o.id}>
@@ -252,11 +235,7 @@ export default function MallOrdersPage() {
                   <StatusTag tone={orderStatusTone(o.status)}>{o.status}</StatusTag>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{o.orderNo}</TableCell>
-                <TableCell>
-                  <span className="block truncate" title={o.nickname}>
-                    {o.nickname}
-                  </span>
-                </TableCell>
+
                 <TableCell>
                   <span className="block truncate" title={`${o.employee} · ${o.dept}`}>
                     {o.employee}
@@ -323,10 +302,7 @@ export default function MallOrdersPage() {
               <ConfirmRow
                 label="员工"
                 value={
-                  <>
-                    {target.employee}
-                    <span className="text-muted-foreground">（{target.nickname}）</span>
-                  </>
+                  target.employee
                 }
               />
               <ConfirmRow
@@ -354,7 +330,7 @@ export default function MallOrdersPage() {
           )}
 
           <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            积分与库存已在会员兑换时结算，本次确认��登记领取事实，不会再次改动积分或库存；
+            积分与库存已在会员兑换时结算，本次确认仅登记领取事实，不会再次改动积分或库存；
             确认人将记录为 <span className="text-foreground">{role.person}</span>。
           </p>
 

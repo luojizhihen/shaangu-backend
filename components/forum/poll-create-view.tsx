@@ -69,6 +69,7 @@ export function PollCreateView() {
   const [body, setBody] = React.useState('')
   const [cover, setCover] = React.useState('')
   const [mode, setMode] = React.useState<PollMode>('单选')
+  const [maxChoices, setMaxChoices] = React.useState(2)
   const [optionMode, setOptionMode] = React.useState<PollOptionMode>('文字')
   const [deadline, setDeadline] = React.useState(defaultDeadline())
   const [options, setOptions] = React.useState<DraftOption[]>([newOption(), newOption()])
@@ -81,6 +82,7 @@ export function PollCreateView() {
     body,
     cover,
     mode,
+    maxChoices,
     optionMode,
     deadline: deadline.replace('T', ' '),
     options,
@@ -111,7 +113,12 @@ export function PollCreateView() {
       toast.error(`至少需要 ${MIN_OPTIONS} 个选项`)
       return
     }
-    setOptions((prev) => prev.filter((o) => o.id !== id))
+    setOptions((prev) => {
+      const next = prev.filter((o) => o.id !== id)
+      // 选项减少后收敛最多可选项数，避免上限超过实际选项数
+      setMaxChoices((m) => Math.min(m, next.length))
+      return next
+    })
   }
 
   function pickOptionImage(files: FileList | null) {
@@ -233,10 +240,42 @@ export function PollCreateView() {
                   id="poll-mode"
                   aria-label="投票模式"
                   value={mode}
-                  onChange={(v) => setMode(v as PollMode)}
+                  onChange={(v) => {
+                    const next = v as PollMode
+                    setMode(next)
+                    // 切到多选时把上限收敛到当前选项数以内
+                    if (next === '多选') {
+                      setMaxChoices((m) => Math.min(Math.max(m, 2), options.length))
+                    }
+                  }}
                   options={['单选', '多选']}
                 />
               </div>
+
+              {/* 仅多选需要配置最多可选项数 */}
+              {mode === '多选' && (
+                <div className="grid gap-1.5">
+                  <label className="text-[13px]" htmlFor="poll-max-choices">
+                    <span className="text-destructive">*</span>最多可选
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="poll-max-choices"
+                      type="number"
+                      min={2}
+                      max={options.length}
+                      value={maxChoices}
+                      onChange={(e) =>
+                        setMaxChoices(Number.parseInt(e.target.value, 10) || 2)
+                      }
+                      className="sm:w-28"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      项（共 {options.length} 个选项）
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <ul className="grid gap-2">

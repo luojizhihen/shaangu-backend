@@ -36,6 +36,8 @@ export type PollOption = {
 
 export type Poll = {
   mode: PollMode
+  /** 多选时最多可选项数；单选固定为 1 */
+  maxChoices: number
   optionMode: PollOptionMode
   /** 截止时间，发布后锁定 */
   deadline: string
@@ -68,8 +70,8 @@ export type ForumPost = {
   top: boolean
   /** 官方账号发布 */
   official: boolean
+  /** 论坛只展示昵称，不保留发帖人真实姓名 */
   nickname: string
-  author: string
   employeeNo: string
   dept: string
   personStatus: PersonStatus
@@ -91,10 +93,9 @@ export type ForumComment = {
   /** 一级评论为 null，二级为所回复评论的 ID */
   parentId: string | null
   content: string
+  /** 评论只展示昵称，不保留员工真实姓名与所属部门 */
   nickname: string
-  author: string
   employeeNo: string
-  dept: string
   personStatus: PersonStatus
   official: boolean
   createdAt: string
@@ -182,7 +183,6 @@ const SEED_POSTS: ForumPost[] = [
     top: true,
     official: false,
     nickname: '老马修机',
-    author: '马涛',
     employeeNo: 'SG02194',
     dept: '检修分厂',
     personStatus: '在职',
@@ -215,7 +215,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: true,
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
     dept: '党群工作部',
     personStatus: '在职',
@@ -227,6 +226,7 @@ const SEED_POSTS: ForumPost[] = [
     commentCount: 3,
     poll: {
       mode: '单选',
+      maxChoices: 1,
       optionMode: '文字',
       deadline: '2026-08-20 18:00',
       participants: 1426,
@@ -252,7 +252,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: true,
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
     dept: '党群工作部',
     personStatus: '在职',
@@ -264,6 +263,7 @@ const SEED_POSTS: ForumPost[] = [
     commentCount: 2,
     poll: {
       mode: '多选',
+      maxChoices: 2,
       optionMode: '图片',
       deadline: '2026-08-18 12:00',
       participants: 982,
@@ -288,7 +288,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: false,
     nickname: '夜猫子',
-    author: '陈晓',
     employeeNo: 'SG03318',
     dept: '总装分厂',
     personStatus: '在职',
@@ -320,7 +319,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: false,
     nickname: '闲鱼小王',
-    author: '王宁',
     employeeNo: 'SG04471',
     dept: '质量部',
     personStatus: '在职',
@@ -346,7 +344,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: false,
     nickname: '匿名用户',
-    author: '李海',
     employeeNo: 'SG05920',
     dept: '后勤中心',
     personStatus: '离职',
@@ -372,7 +369,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: false,
     nickname: '技能大赛组委',
-    author: '周文倩',
     employeeNo: 'SG01126',
     dept: '人力资源部',
     personStatus: '在职',
@@ -384,6 +380,7 @@ const SEED_POSTS: ForumPost[] = [
     commentCount: 0,
     poll: {
       mode: '单选',
+      maxChoices: 1,
       optionMode: '文字',
       deadline: '2026-08-14 18:00',
       participants: 402,
@@ -408,7 +405,6 @@ const SEED_POSTS: ForumPost[] = [
     top: false,
     official: true,
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
     dept: '党群工作部',
     personStatus: '在职',
@@ -430,9 +426,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '辛苦了，动平衡那段确实最费神，我们班组上次也卡在这儿。',
     nickname: '风叶如刀',
-    author: '刘志强',
     employeeNo: 'SG02277',
-    dept: '总装分厂',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-10 09:24:08',
@@ -448,9 +442,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: 'FC-001',
     content: '是的，这次我们提前做了配重预案，后面可以一起交流。',
     nickname: '老马修机',
-    author: '马涛',
     employeeNo: 'SG02194',
-    dept: '检修分厂',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-10 09:51:33',
@@ -466,9 +458,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: 'FC-001',
     content: '经验总结已同步设备管理部，后续会形成标准作业指导。',
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
-    dept: '党群工作部',
     personStatus: '在职',
     official: true,
     createdAt: '2026-08-10 15:03:10',
@@ -484,9 +474,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '这种帖子有什么意义，天天发这些没用的。',
     nickname: '路人甲',
-    author: '李海',
     employeeNo: 'SG05920',
-    dept: '后勤中心',
     personStatus: '离职',
     official: false,
     createdAt: '2026-08-10 18:02:55',
@@ -502,9 +490,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '希望能同时考虑东厂区的接驳时间，06:40 对我们来说太早。',
     nickname: '东区通勤',
-    author: '孙建国',
     employeeNo: 'SG02901',
-    dept: '生产管理部',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-09 10:22:41',
@@ -515,14 +501,12 @@ const SEED_COMMENTS: ForumComment[] = [
   {
     id: 'FC-006',
     postId: 'FP-20260809-002',
-    postTitle: '通勤班车早班发车���间调整意见征集',
+    postTitle: '通勤班车早班发车时间调整意见征集',
     postType: '投票',
     parentId: 'FC-005',
     content: '东厂区接驳会一并纳入评估，投票截止后统一答复。',
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
-    dept: '党群工作部',
     personStatus: '在职',
     official: true,
     createdAt: '2026-08-09 11:05:19',
@@ -538,9 +522,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '投票是不是已经内定了，问了也没用。',
     nickname: '匿名同事',
-    author: '高鹏',
     employeeNo: 'SG03042',
-    dept: '技术中心',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-09 14:38:02',
@@ -556,9 +538,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '两个方案都想要，希望轻食窗口能延长供应时间。',
     nickname: '小陈',
-    author: '陈晓',
     employeeNo: 'SG03318',
-    dept: '总装分厂',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-08 12:31:47',
@@ -574,9 +554,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: 'FC-008',
     content: '轻食窗口计划供应到 13:30，具体以最终方案为准。',
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
-    dept: '党群工作部',
     personStatus: '在职',
     official: true,
     createdAt: '2026-08-08 13:10:02',
@@ -592,9 +570,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '我们班组也遇到同样情况，希望能给个统一说明。',
     nickname: '三班倒',
-    author: '郭亮',
     employeeNo: 'SG04120',
-    dept: '服务事业部',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-07 23:10:26',
@@ -610,9 +586,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: 'FC-010',
     content: '本月起恢复每月 15 日随工资发放，已在帖内官方回复说明。',
     nickname: '陕鼓融媒官方',
-    author: '刘思远',
     employeeNo: 'SG00087',
-    dept: '党群工作部',
     personStatus: '在职',
     official: true,
     createdAt: '2026-08-08 09:13:41',
@@ -628,9 +602,7 @@ const SEED_COMMENTS: ForumComment[] = [
     parentId: null,
     content: '价格能再谈吗，私聊我。',
     nickname: '同事乙',
-    author: '张倩',
     employeeNo: 'SG03755',
-    dept: '检修分厂',
     personStatus: '在职',
     official: false,
     createdAt: '2026-08-06 13:02:11',
@@ -926,6 +898,8 @@ export type PollDraftInput = {
   body: string
   cover: string
   mode: PollMode
+  /** 多选时最多可选项数；单选忽略此值 */
+  maxChoices: number
   optionMode: PollOptionMode
   deadline: string
   options: { id: string; label: string; image: string }[]
@@ -990,6 +964,17 @@ export function validatePoll(input: PollDraftInput): ValidationIssue[] {
   if (new Set(labels).size !== labels.length)
     issues.push({ field: '投票选项', message: '选项文字不可重复' })
 
+  // 多选必须限定最多可选项数，且不能超过实际选项数
+  if (input.mode === '多选') {
+    if (!Number.isInteger(input.maxChoices) || input.maxChoices < 2)
+      issues.push({ field: '最多可选', message: '多选时最多可选项数不少于 2' })
+    else if (input.maxChoices > input.options.length)
+      issues.push({
+        field: '最多可选',
+        message: `最多可选项数不能超过选项总数（${input.options.length}）`,
+      })
+  }
+
   if (!input.deadline) issues.push({ field: '截止时间', message: '截止时间为必填项' })
   else {
     const end = new Date(input.deadline.replace(' ', 'T'))
@@ -1016,7 +1001,6 @@ function baseAuthorInfo(actor: Actor, official: boolean) {
     source: '管理端发布' as ForumSource,
     official,
     nickname: official ? '陕鼓融媒官方' : actor.person,
-    author: actor.person,
     employeeNo: 'SG00087',
     dept: '党群工作部',
     personStatus: '在职' as PersonStatus,
@@ -1097,6 +1081,8 @@ export function createForumPoll(
     commentCount: 0,
     poll: {
       mode: input.mode,
+      // 单选固定为 1，避免残留多选时填写的上限值
+      maxChoices: input.mode === '多选' ? input.maxChoices : 1,
       optionMode: input.optionMode,
       deadline: input.deadline,
       participants: 0,
@@ -1120,7 +1106,7 @@ export function createForumPoll(
       action: '直接发布',
       reason: '必填、格式与敏感词校验通过',
       before: '新建',
-      after: '已发布（选项、单/多选、截止时间与结果锁定）',
+      after: '已发布（选项、单/多选与最多可选、截止时间与结果锁定）',
     })
     commit({})
   }
@@ -1150,6 +1136,7 @@ export function publishForumDraft(
           body: post.body,
           cover: post.cover,
           mode: post.poll.mode,
+          maxChoices: post.poll.maxChoices,
           optionMode: post.poll.optionMode,
           deadline: post.poll.deadline,
           options: post.poll.options.map((o) => ({

@@ -46,23 +46,74 @@ export const EMPTY_MEDIA_FORM: MediaFormValues = {
   top: false,
 }
 
-/** 读取媒体时长（视频不做转码，也不再截取首帧） */
-async function probeDuration(file: File, kind: MediaKind): Promise<string> {
+/** 读取音频时长 */
+async function probeAudioDuration(file: File): Promise<string> {
   const url = URL.createObjectURL(file)
   try {
-    const el =
-      kind === '陕鼓之声'
-        ? document.createElement('audio')
-        : document.createElement('video')
+    const el = document.createElement('audio')
     el.preload = 'metadata'
     el.src = url
-    const label = kind === '陕鼓之声' ? '音频' : '视频'
     const seconds = await new Promise<number>((resolve, reject) => {
       el.onloadedmetadata = () => resolve(el.duration)
-      el.onerror = () => reject(new Error(`${label}解码失败`))
-      window.setTimeout(() => reject(new Error(`读取${label}信息超时`)), 10000)
+      el.onerror = () => reject(new Error('音频解码失败'))
+      window.setTimeout(() => reject(new Error('读取音频信息超时')), 10000)
     })
     return formatDuration(seconds)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
+/**
+ * 读取视频时长并截取首帧作为封面。
+ *
+ * 真实环境由服务端转码时截帧，原型下用 canvas 在浏览器内截取，效果一致：
+ * 封面不再需要人工上传。跳到 0.1 秒再截，避开部分视频起始的纯黑帧。
+ */
+async function probeVideo(file: File): Promise<{ duration: string; cover: string }> {
+  const url = URL.createObjectURL(file)
+  const el = document.createElement('video')
+  el.preload = 'auto'
+  el.muted = true
+  el.src = url
+
+  try {
+    const seconds = await new Promise<number>((resolve, reject) => {
+      el.onloadeddata = () => resolve(el.duration)
+      el.onerror = () => reject(new Error('视频解码失败'))
+      window.setTimeout(() => reject(new Error('读取视频信息超时')), 15000)
+    })
+
+    // 定位到首帧后再绘制，否则可能拿到空画面
+    await new Promise<void>((resolve, reject) => {
+      el.onseeked = () => resolve()
+      el.onerror = () => reject(new Error('视频定位失败'))
+      el.currentTime = Math.min(0.1, Number.isFinite(el.duration) ? el.duration / 2 : 0.1)
+      window.setTimeout(() => reject(new Error('截取封面超时')), 15000)
+    })
+
+    const canvas = document.createElement('canvas')
+    canvas.width = el.videoWidth
+    canvas.height = el.videoHeight
+    const ctx = canvas.getContext('2d')
+    if (!ctx || !canvas.width || !canvas.height) {
+      throw new Error('当前浏览器无法截取视频封面')
+    }
+    ctx.drawImage(el, 0, 0, canvas.width, canvas.height)
+
+    // 用 blob 地址与其他上传口径保持一致，不写入 base64
+    const cover = await new Promise<string>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) =>
+          blob
+            ? resolve(URL.createObjectURL(blob))
+            : reject(new Error('封面生成失败')),
+        'image/jpeg',
+        0.85,
+      )
+    })
+
+    return { duration: formatDuration(seconds), cover }
   } finally {
     URL.revokeObjectURL(url)
   }
@@ -123,11 +174,28 @@ export function MediaForm({
       fileSize: formatSize(file.size),
       duration: '—',
     })
+
+    if (!isVideo) {
+      try {
+        onChange({ duration: await probeAudioDuration(file) })
+        toast.success('音频已上传')
+      } catch {
+        toast.success('音频已上传，未能读取时长')
+      }
+      return
+    }
+
+    // 视频封面由系统自动截取首帧，无需人工上传
     try {
-      onChange({ duration: await probeDuration(file, values.kind) })
-      toast.success(`${label}已上传`)
-    } catch {
-      toast.success(`${label}已上传，未能读取时长`)
+      const { duration, cover } = await probeVideo(file)
+      onChange({ duration, cover })
+      toast.success('视频已上传，已自动截取首帧作为封面')
+    } catch (e) {
+      toast.warning(
+        `视频已上传，但未能自动生成封面：${
+          e instanceof Error ? e.message : '未知原因'
+        }`,
+      )
     }
   }
 
@@ -252,14 +320,19 @@ export function MediaForm({
         <Panel
           title="封面"
           extra={
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => coverRef.current?.click()}
-            >
-              <Upload className="size-3.5" />
-              上传封面
-            </Button>
+            // 视频封面由系统截取首帧生成，不提供上传入口；音频仍需手动上传
+            isVideo ? (
+              <StatusTag tone="info">系统自动生成</StatusTag>
+            ) : (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => coverRef.current?.click()}
+              >
+                <Upload className="size-3.5" />
+                上传封面
+              </Button>
+            )
           }
         >
           <input
@@ -271,42 +344,46 @@ export function MediaForm({
           />
           {values.cover ? (
             <div className="relative aspect-video w-full max-w-80 overflow-hidden rounded-md border border-border">
-              {/* 手动上传的封面为本地 blob，使用原生 img 渲染 */}
+              {/* 封面为本地 blob（视频截帧或音频上传），使用原生 img 渲染 */}
               <img
                 src={values.cover || '/placeholder.svg'}
                 alt={`${values.title || '视听内容'}封面`}
                 className="absolute inset-0 size-full object-cover"
               />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-foreground/55 px-1.5 py-1">
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  className="h-6 text-surface hover:bg-surface/20 hover:text-surface"
-                  onClick={() => coverRef.current?.click()}
-                >
-                  重新上传
-                </Button>
-                <Button
-                  size="icon-xs"
-                  variant="ghost"
-                  aria-label="删除封面"
-                  className="text-surface hover:bg-surface/20 hover:text-surface"
-                  onClick={() => onChange({ cover: '' })}
-                >
-                  <Trash2 />
-                </Button>
-              </div>
+              {!isVideo && (
+                <div className="absolute inset-x-0 bottom-0 flex items-center justify-end gap-1 bg-foreground/55 px-1.5 py-1">
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    className="h-6 text-surface hover:bg-surface/20 hover:text-surface"
+                    onClick={() => coverRef.current?.click()}
+                  >
+                    重新上传
+                  </Button>
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    aria-label="删除封面"
+                    className="text-surface hover:bg-surface/20 hover:text-surface"
+                    onClick={() => onChange({ cover: '' })}
+                  >
+                    <Trash2 />
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex aspect-video w-full max-w-80 flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-border text-muted-foreground">
               <ImagePlus className="size-6" />
               <span className="px-4 text-center text-[13px] leading-relaxed">
-                请手动上传封面图
+                {isVideo ? '上传视频后自动生成封面' : '请手动上传封面图'}
               </span>
             </div>
           )}
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            封面需手动上传，建议 16:9；无封面无法发布或上架。
+            {isVideo
+              ? '封面由系统自动截取视频第一帧生成，无需人工上传；无封面无法发布或上架。'
+              : '封面需手动上传，建议 16:9；无封面无法发布或上架。'}
           </p>
         </Panel>
 

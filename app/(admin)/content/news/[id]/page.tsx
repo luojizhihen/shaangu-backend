@@ -21,6 +21,8 @@ import { PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
 import { NewsForm, type NewsFormValues } from '@/components/content/news-form'
 import {
   NewsPreviewDialog,
+  previewFromForm,
+  previewFromItem,
   type PreviewData,
 } from '@/components/content/news-preview'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
@@ -149,13 +151,16 @@ export default function NewsDetailPage() {
             <Button
               variant="outline"
               onClick={() =>
-                setPreview({
-                  ...values,
-                  author: item.author,
-                  dept: item.dept,
-                  publishedAt: item.publishedAt,
-                  status: item.status,
-                })
+                // 草稿按当前表单数据模拟发布后效果；已发布与已下架展示实际发布版本
+                setPreview(
+                  item.status === '草稿'
+                    ? previewFromForm(values, {
+                        author: item.author,
+                        dept: item.dept,
+                        status: item.status,
+                      })
+                    : previewFromItem(item),
+                )
               }
             >
               <Eye className="size-4" />

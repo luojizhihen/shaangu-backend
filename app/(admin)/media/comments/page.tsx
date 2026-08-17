@@ -45,14 +45,12 @@ export default function MediaCommentsPage() {
 
   const [mediaTitle, setMediaTitle] = React.useState(fromMedia)
   const [content, setContent] = React.useState('')
-  const [nickname, setNickname] = React.useState('')
   const [author, setAuthor] = React.useState('')
   const [kind, setKind] = React.useState('全部类型')
   const [state, setState] = React.useState('全部状态')
   const [query, setQuery] = React.useState({
     mediaTitle: fromMedia,
     content: '',
-    nickname: '',
     author: '',
     kind: '全部类型',
     state: '全部状态',
@@ -66,13 +64,12 @@ export default function MediaCommentsPage() {
       comments.filter((c) => {
         const hitMedia = c.mediaTitle.includes(query.mediaTitle.trim())
         const hitContent = c.content.includes(query.content.trim())
-        const hitNickname = c.nickname.includes(query.nickname.trim())
         const hitAuthor = c.author.includes(query.author.trim())
         const hitKind = query.kind === '全部类型' || c.mediaKind === query.kind
         const hitState =
           query.state === '全部状态' ||
           (query.state === '已隐藏' ? c.hidden : !c.hidden)
-        return hitMedia && hitContent && hitNickname && hitAuthor && hitKind && hitState
+        return hitMedia && hitContent && hitAuthor && hitKind && hitState
       }),
     [comments, query],
   )
@@ -80,21 +77,19 @@ export default function MediaCommentsPage() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ mediaTitle, content, nickname, author, kind, state })
+    setQuery({ mediaTitle, content, author, kind, state })
     table.setPage(1)
   }
 
   function reset() {
     setMediaTitle('')
     setContent('')
-    setNickname('')
     setAuthor('')
     setKind('全部类型')
     setState('全部状态')
     setQuery({
       mediaTitle: '',
       content: '',
-      nickname: '',
       author: '',
       kind: '全部类型',
       state: '全部状态',
@@ -152,13 +147,7 @@ export default function MediaCommentsPage() {
             onChange={(e) => setContent(e.target.value)}
           />
         </FilterField>
-        <FilterField label="昵称">
-          <Input
-            value={nickname}
-            placeholder="请输入昵称"
-            onChange={(e) => setNickname(e.target.value)}
-          />
-        </FilterField>
+
         <FilterField label="员工姓名">
           <Input
             value={author}
@@ -218,7 +207,6 @@ export default function MediaCommentsPage() {
               <TableHead className="min-w-56">所属视听内容</TableHead>
               <TableHead className="w-24">视听类型</TableHead>
               <TableHead className="min-w-64">评论内容</TableHead>
-              <TableHead className="w-32">昵称</TableHead>
               <TableHead className="w-28">员工姓名</TableHead>
               <TableHead className="w-28">所属部门</TableHead>
               <TableHead className="w-44">评论时间</TableHead>
@@ -228,7 +216,7 @@ export default function MediaCommentsPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={11} text="没有符合条件的评论" />
+              <TableEmpty colSpan={10} text="没有符合条件的评论" />
             )}
             {table.pageRows.map((c, i) => (
               <TableRow key={c.id}>
@@ -260,7 +248,6 @@ export default function MediaCommentsPage() {
                 <TableCell>
                   <span className="line-clamp-2 whitespace-normal">{c.content}</span>
                 </TableCell>
-                <TableCell>{c.nickname}</TableCell>
                 <TableCell>{c.author}</TableCell>
                 <TableCell className="text-muted-foreground">{c.dept}</TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">

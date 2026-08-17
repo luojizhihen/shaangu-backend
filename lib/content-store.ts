@@ -526,7 +526,7 @@ const SEED_COMMENTS: CommentItem[] = [
   {
     id: 'CMT-0009',
     newsId: 'NEWS-20260807-005',
-    newsTitle: '学习｜能���系统节能技术要点解析',
+    newsTitle: '学习｜能源系统节能技术要点解析',
     content: '案例三的改造前后数据能否补充一下？',
     nickname: '内刊常客',
     author: '郑文博',
@@ -837,7 +837,7 @@ export function putOnline(ids: string[]): BatchResult[] {
       return n
     }
     if (n.status === '已发布') {
-      results.push({ id: n.id, label: n.title, ok: false, message: '已处于上���状态' })
+      results.push({ id: n.id, label: n.title, ok: false, message: '已处于上架状态' })
       return n
     }
     if (!n.cover) {
