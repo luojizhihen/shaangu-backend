@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { CheckCircle2, Download, RefreshCcw } from 'lucide-react'
+import { CheckCircle2, Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -117,12 +117,6 @@ export default function MallOrdersPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="订单管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

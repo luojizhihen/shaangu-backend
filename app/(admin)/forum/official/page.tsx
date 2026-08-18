@@ -103,24 +103,6 @@ export default function ForumOfficialPage() {
       <PageHeader
         breadcrumb={['论坛管理', '官方内容']}
         title="官方内容"
-        actions={
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/forum/posts/new')}
-            >
-              新建官方图文
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/forum/polls/new')}
-            >
-              新建官方投票
-            </Button>
-          </>
-        }
       />
 
       <p className="mb-3 flex items-start gap-2 rounded-md border border-brand/25 bg-brand/6 px-3 py-2 text-xs leading-relaxed text-brand">

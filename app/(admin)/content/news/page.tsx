@@ -11,7 +11,6 @@ import {
   Pin,
   PinOff,
   Plus,
-  RefreshCcw,
   Send,
   SquarePen,
   Trash2,
@@ -208,18 +207,6 @@ export default function NewsListPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯管理"
-        actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={() => router.push('/content/news/new')}>
-              <Plus className="size-4" />
-              新增资讯
-            </Button>
-          </>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

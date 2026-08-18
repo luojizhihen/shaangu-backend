@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { CircleSlash, Plus, RefreshCcw, ShieldCheck, SquarePen, Trash2 } from 'lucide-react'
+import { CircleSlash, Plus, ShieldCheck, SquarePen, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -158,12 +158,6 @@ export default function PointsRulesPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="积分规则"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

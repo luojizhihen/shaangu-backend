@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { BadgeCheck, Eye, EyeOff, RefreshCcw } from 'lucide-react'
+import { BadgeCheck, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -147,12 +147,6 @@ function ForumCommentsView() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="评论与回复管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

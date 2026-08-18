@@ -12,7 +12,6 @@ import {
   Pin,
   PinOff,
   Plus,
-  RefreshCcw,
   Send,
   SquarePen,
   Trash2,
@@ -195,18 +194,6 @@ export function MediaListView({
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title={pageTitle}
-        actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={() => router.push(newHref)}>
-              <Plus className="size-4" />
-              新增{isVideo ? '视频' : '音频'}
-            </Button>
-          </>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

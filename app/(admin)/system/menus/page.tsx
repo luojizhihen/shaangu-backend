@@ -9,7 +9,6 @@ import {
   ChevronsUpDown,
   Pencil,
   Plus,
-  RefreshCcw,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -116,14 +115,6 @@ export default function MenusPage() {
               新增
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => toast.success('菜单树已刷新')}
-          >
-            <RefreshCcw className="size-3.5" />
-            刷新
-          </Button>
           {canWrite && (
             <Button size="sm" variant="outline" onClick={batchDelete}>
               <Trash2 className="size-3.5" />

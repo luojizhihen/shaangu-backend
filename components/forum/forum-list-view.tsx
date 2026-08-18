@@ -13,7 +13,6 @@ import {
   Pin,
   PinOff,
   Plus,
-  RefreshCcw,
   ScrollText,
   Trash2,
   Vote,
@@ -203,16 +202,6 @@ export function ForumListView({ scope }: { scope: ForumListScope }) {
               >
                 <ScrollText className="size-4" />
                 治理日志
-              </Button>
-            )}
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            {canPublish && isPoll && (
-              <Button onClick={() => router.push('/forum/polls/new')}>
-                <Plus className="size-4" />
-                新建投票帖子
               </Button>
             )}
           </>

@@ -9,7 +9,6 @@ import {
   KeyRound,
   Pencil,
   Plus,
-  RefreshCcw,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -287,12 +286,6 @@ export default function StaffPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="员工管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
