@@ -416,7 +416,7 @@ export default function StaffPage() {
             </Button>
             <span className="ml-auto text-xs text-muted-foreground">
               系统新建 <span className="font-mono">{customCount}</span> 个 · NC
-              同步的员工只读，仅可启用/停用与重置密码
+              同步的员工只读，仅可启用/停用��重置密码
             </span>
           </Toolbar>
 
