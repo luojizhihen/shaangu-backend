@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import {
   CircleSlash,
   Plus,
-  RefreshCcw,
   ShieldCheck,
   SquarePen,
   Upload,
@@ -177,22 +176,6 @@ export default function ForumSensitiveWordsPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="敏感词管理"
-        actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload className="size-4" />
-              批量导入
-            </Button>
-            <Button onClick={openCreate}>
-              <Plus className="size-4" />
-              新增词条
-            </Button>
-          </>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -238,6 +221,10 @@ export default function ForumSensitiveWordsPage() {
             <Button size="sm" variant="outline" onClick={() => batchToggle(false)}>
               <CircleSlash className="size-3.5" />
               批量停用
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+              <Upload className="size-3.5" />
+              批量导入
             </Button>
           </Toolbar>
 

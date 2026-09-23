@@ -10,7 +10,6 @@ import {
   Download,
   Eye,
   ListTree,
-  RefreshCcw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -163,12 +162,6 @@ export default function DepartmentsPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="部门管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('组织树已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

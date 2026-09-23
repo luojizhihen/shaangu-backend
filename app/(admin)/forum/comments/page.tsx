@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Suspense } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { BadgeCheck, Eye, EyeOff, RefreshCcw } from 'lucide-react'
+import { BadgeCheck, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -74,7 +74,7 @@ function ForumCommentsView() {
         const hitPost = c.postTitle.includes(query.postTitle.trim())
         const hitContent = c.content.includes(query.content.trim())
         const kw = query.person.trim()
-        const hitPerson = !kw || c.nickname.includes(kw) || c.author.includes(kw)
+        const hitPerson = !kw || c.nickname.includes(kw)
         const hitType = query.type === '全部' || c.postType === query.type
         const hitVisibility =
           query.visibility === '全部展示状态' || c.visibility === query.visibility
@@ -147,12 +147,6 @@ function ForumCommentsView() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="评论与回复管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -184,7 +178,7 @@ function ForumCommentsView() {
         <FilterField label="评论人">
           <Input
             value={person}
-            placeholder="请输入昵称或员工姓名"
+            placeholder="请输入评论人昵称"
             onChange={(e) => setPerson(e.target.value)}
           />
         </FilterField>
@@ -228,9 +222,7 @@ function ForumCommentsView() {
               <TableHead className="w-44">所属内容</TableHead>
               <TableHead className="w-20">内容类型</TableHead>
               <TableHead>评论内容</TableHead>
-              <TableHead className="w-24">评论人昵称</TableHead>
-              <TableHead className="w-20">员工姓名</TableHead>
-              <TableHead className="w-24">所属部门</TableHead>
+              <TableHead className="w-28">评论人昵称</TableHead>
               <TableHead className="w-28">评论时间</TableHead>
               <TableHead className="w-24">展示状态</TableHead>
               <TableHead className="w-20 pr-4 text-center">操作</TableHead>
@@ -238,7 +230,7 @@ function ForumCommentsView() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={11} text="没有符合条件的评论或回复" />
+              <TableEmpty colSpan={9} text="没有符合条件的评论或回复" />
             )}
             {table.pageRows.map((c, i) => {
               const hidden = c.visibility === '已隐藏'
@@ -285,14 +277,10 @@ function ForumCommentsView() {
                         {c.nickname}
                       </span>
                     </span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="block truncate" title={c.author}>
-                      {c.author}
+                    <span className="text-xs text-muted-foreground">
+                      {c.personStatus}
                     </span>
-                    <span className="text-xs text-muted-foreground">{c.personStatus}</span>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{c.dept}</TableCell>
                   <TableCell
                     className="font-mono text-xs text-muted-foreground"
                     title={c.createdAt}

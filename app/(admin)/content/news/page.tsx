@@ -6,11 +6,11 @@ import {
   ArrowDownUp,
   ArrowUpFromLine,
   ArrowDownToLine,
+  Eye,
   MessageSquare,
   Pin,
   PinOff,
   Plus,
-  RefreshCcw,
   Send,
   SquarePen,
   Trash2,
@@ -33,6 +33,11 @@ import {
   useTableState,
 } from '@/components/content/table-shell'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
+import {
+  NewsPreviewDialog,
+  previewFromItem,
+  type PreviewData,
+} from '@/components/content/news-preview'
 import {
   NEWS_STATUSES,
   publishNews,
@@ -103,6 +108,7 @@ export default function NewsListPage() {
 
   const [results, setResults] = React.useState<BatchResult[] | null>(null)
   const [resultAction, setResultAction] = React.useState('批量操作')
+  const [preview, setPreview] = React.useState<PreviewData | null>(null)
   const [confirm, setConfirm] = React.useState<{
     action: string
     tip: string
@@ -201,18 +207,6 @@ export default function NewsListPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯管理"
-        actions={
-          <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
-            <Button onClick={() => router.push('/content/news/new')}>
-              <Plus className="size-4" />
-              新增资讯
-            </Button>
-          </>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -442,6 +436,16 @@ export default function NewsListPage() {
                     <Button
                       size="icon-sm"
                       variant="ghost"
+                      title="预览"
+                      aria-label={`预览 ${n.title}`}
+                      onClick={() => setPreview(previewFromItem(n))}
+                    >
+                      <Eye />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      title="编辑"
                       aria-label={`编辑 ${n.title}`}
                       onClick={() => router.push(`/content/news/${n.id}`)}
                     >
@@ -450,6 +454,7 @@ export default function NewsListPage() {
                     <Button
                       size="icon-sm"
                       variant="ghost"
+                      title="评论"
                       aria-label={`查看 ${n.title} 的评论`}
                       onClick={() =>
                         router.push(
@@ -475,6 +480,12 @@ export default function NewsListPage() {
           onPageSizeChange={table.setPageSize}
         />
       </Panel>
+
+      <NewsPreviewDialog
+        open={preview !== null}
+        onOpenChange={(v) => !v && setPreview(null)}
+        data={preview}
+      />
 
       <Dialog open={confirm !== null} onOpenChange={(v) => !v && setConfirm(null)}>
         <DialogContent>

@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { ImagePlus, Paperclip, Trash2, Upload } from 'lucide-react'
+import { FileUp, ImagePlus, Paperclip, Trash2, Upload } from 'lucide-react'
 
 import { NOTICE_CATEGORY, type Attachment, type Category } from '@/lib/content-store'
 import { RichTextEditor } from '@/components/content/rich-text-editor'
+import { WordImportDialog } from '@/components/content/word-import-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -68,6 +69,7 @@ export function NewsForm({
 }) {
   const fileRef = React.useRef<HTMLInputElement>(null)
   const coverRef = React.useRef<HTMLInputElement>(null)
+  const [wordOpen, setWordOpen] = React.useState(false)
   const current = categories.find((c) => c.name === values.category)
   const attachmentEnabled = Boolean(current?.withAttachment)
   const isNotice = values.category === NOTICE_CATEGORY
@@ -95,6 +97,7 @@ export function NewsForm({
   }
 
   return (
+    <>
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <Panel title="正文内容">
         <div className="grid gap-4">
@@ -137,10 +140,21 @@ export function NewsForm({
           </FormRow>
 
           <FormRow label="正文" required>
-            <RichTextEditor
-              value={values.body}
-              onChange={(html) => onChange({ body: html })}
-            />
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs text-muted-foreground">
+                  可直接编辑，也可从 Word 文档导入后继续修改
+                </span>
+                <Button size="xs" variant="outline" onClick={() => setWordOpen(true)}>
+                  <FileUp className="size-3.5" />
+                  导入 Word
+                </Button>
+              </div>
+              <RichTextEditor
+                value={values.body}
+                onChange={(html) => onChange({ body: html })}
+              />
+            </div>
           </FormRow>
         </div>
       </Panel>
@@ -274,5 +288,13 @@ export function NewsForm({
         )}
       </div>
     </div>
+
+    <WordImportDialog
+      open={wordOpen}
+      onOpenChange={setWordOpen}
+      currentBody={values.body}
+      onImport={(html) => onChange({ body: html })}
+    />
+    </>
   )
 }

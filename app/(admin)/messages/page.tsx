@@ -6,7 +6,6 @@ import {
   Download,
   Eye,
   Plus,
-  RefreshCcw,
   Send,
   SquarePen,
   Trash2,
@@ -370,12 +369,6 @@ export default function MessagesPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="消息管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

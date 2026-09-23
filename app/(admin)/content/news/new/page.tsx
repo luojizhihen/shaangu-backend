@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowLeft, Save, Send } from 'lucide-react'
+import { ArrowLeft, Eye, Save, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -13,6 +13,11 @@ import {
   type NewsFormValues,
 } from '@/components/content/news-form'
 import { BatchResultDialog } from '@/components/content/batch-result-dialog'
+import {
+  NewsPreviewDialog,
+  previewFromForm,
+  type PreviewData,
+} from '@/components/content/news-preview'
 import {
   createNews,
   publishNews,
@@ -30,6 +35,7 @@ export default function NewNewsPage() {
   const canPublish = allow('content.publish')
 
   const [values, setValues] = React.useState<NewsFormValues>(EMPTY_NEWS_FORM)
+  const [preview, setPreview] = React.useState<PreviewData | null>(null)
   const [results, setResults] = React.useState<BatchResult[] | null>(null)
 
   function patch(p: Partial<NewsFormValues>) {
@@ -81,6 +87,22 @@ export default function NewNewsPage() {
               <ArrowLeft className="size-4" />
               返回列表
             </Button>
+            <Button
+              variant="outline"
+              onClick={() =>
+                // 新增页尚未落库，按当前表单数据模拟发布后效果
+                setPreview(
+                  previewFromForm(values, {
+                    author: role.person,
+                    dept: role.scope,
+                    status: '草稿',
+                  }),
+                )
+              }
+            >
+              <Eye className="size-4" />
+              预览
+            </Button>
             <Button variant="outline" onClick={saveDraft}>
               <Save className="size-4" />
               保存草稿
@@ -96,6 +118,12 @@ export default function NewNewsPage() {
       />
 
       <NewsForm values={values} onChange={patch} categories={categories} />
+
+      <NewsPreviewDialog
+        open={preview !== null}
+        onOpenChange={(v) => !v && setPreview(null)}
+        data={preview}
+      />
 
       <BatchResultDialog
         open={results !== null}

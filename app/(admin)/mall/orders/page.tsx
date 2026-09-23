@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { CheckCircle2, Download, RefreshCcw } from 'lucide-react'
+import { CheckCircle2, Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -53,7 +53,6 @@ import {
 const EMPTY_QUERY = {
   status: '全部状态',
   orderNo: '',
-  nickname: '',
   employee: '',
 }
 
@@ -74,7 +73,6 @@ export default function MallOrdersPage() {
 
   const [status, setStatus] = React.useState('全部状态')
   const [orderNo, setOrderNo] = React.useState('')
-  const [nickname, setNickname] = React.useState('')
   const [employee, setEmployee] = React.useState('')
   const [query, setQuery] = React.useState(EMPTY_QUERY)
   const [target, setTarget] = React.useState<MallOrder | null>(null)
@@ -84,9 +82,8 @@ export default function MallOrdersPage() {
       orders.filter((o) => {
         const hitStatus = query.status === '全部状态' || o.status === query.status
         const hitOrderNo = o.orderNo.includes(query.orderNo.trim())
-        const hitNickname = o.nickname.includes(query.nickname.trim())
         const hitEmployee = o.employee.includes(query.employee.trim())
-        return hitStatus && hitOrderNo && hitNickname && hitEmployee
+        return hitStatus && hitOrderNo && hitEmployee
       }),
     [orders, query],
   )
@@ -95,14 +92,13 @@ export default function MallOrdersPage() {
   const pending = orders.filter((o) => o.status === '待领取').length
 
   function search() {
-    setQuery({ status, orderNo, nickname, employee })
+    setQuery({ status, orderNo, employee })
     table.setPage(1)
   }
 
   function reset() {
     setStatus('全部状态')
     setOrderNo('')
-    setNickname('')
     setEmployee('')
     setQuery(EMPTY_QUERY)
   }
@@ -121,12 +117,6 @@ export default function MallOrdersPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="订单管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -143,16 +133,6 @@ export default function MallOrdersPage() {
             value={orderNo}
             placeholder="请输入订单编号"
             onChange={(e) => setOrderNo(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
-            }}
-          />
-        </FilterField>
-        <FilterField label="昵称">
-          <Input
-            value={nickname}
-            placeholder="请输入昵称"
-            onChange={(e) => setNickname(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.nativeEvent.isComposing) search()
             }}
@@ -181,7 +161,6 @@ export default function MallOrdersPage() {
                 [
                   '订单编号',
                   '订单状态',
-                  '昵称',
                   '员工姓名',
                   '所属部门',
                   '商品名称',
@@ -196,7 +175,6 @@ export default function MallOrdersPage() {
                 rows.map((o) => [
                   o.orderNo,
                   o.status,
-                  o.nickname,
                   o.employee,
                   o.dept,
                   o.productName,
@@ -226,7 +204,6 @@ export default function MallOrdersPage() {
               <TableHead className="w-14 pl-4">序号</TableHead>
               <TableHead className="w-20">订单状态</TableHead>
               <TableHead className="w-40">订单编号</TableHead>
-              <TableHead className="w-28">昵称</TableHead>
               <TableHead className="w-24">员工姓名</TableHead>
               <TableHead className="min-w-36">商品名称</TableHead>
               <TableHead className="w-40">商品编号</TableHead>
@@ -241,7 +218,7 @@ export default function MallOrdersPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={14} text="没有符合条件的订单" />
+              <TableEmpty colSpan={13} text="没有符合条件的订单" />
             )}
             {table.pageRows.map((o, i) => (
               <TableRow key={o.id}>
@@ -252,11 +229,7 @@ export default function MallOrdersPage() {
                   <StatusTag tone={orderStatusTone(o.status)}>{o.status}</StatusTag>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{o.orderNo}</TableCell>
-                <TableCell>
-                  <span className="block truncate" title={o.nickname}>
-                    {o.nickname}
-                  </span>
-                </TableCell>
+
                 <TableCell>
                   <span className="block truncate" title={`${o.employee} · ${o.dept}`}>
                     {o.employee}
@@ -323,10 +296,7 @@ export default function MallOrdersPage() {
               <ConfirmRow
                 label="员工"
                 value={
-                  <>
-                    {target.employee}
-                    <span className="text-muted-foreground">（{target.nickname}）</span>
-                  </>
+                  target.employee
                 }
               />
               <ConfirmRow

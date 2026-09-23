@@ -40,7 +40,6 @@ export type PointsLog = {
   /** 积分流水 ID */
   serial: string
   nickname: string
-  phone: string
   employee: string
   dept: string
   /** 变更数量，恒为正数，方向由 type 决定 */
@@ -110,7 +109,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2208',
     serial: '2208',
     nickname: '筱筱',
-    phone: '13905921188',
     employee: '汪筱',
     dept: '技术中心',
     amount: 2,
@@ -123,7 +121,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2207',
     serial: '2207',
     nickname: '筱筱',
-    phone: '13905921188',
     employee: '汪筱',
     dept: '技术中心',
     amount: 1,
@@ -136,7 +133,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2206',
     serial: '2206',
     nickname: '风起东南',
-    phone: '13609127436',
     employee: '陆东南',
     dept: '装备制造事业部',
     amount: 1,
@@ -149,7 +145,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2205',
     serial: '2205',
     nickname: '风起东南',
-    phone: '13609127436',
     employee: '陆东南',
     dept: '装备制造事业部',
     amount: 120,
@@ -162,7 +157,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2204',
     serial: '2204',
     nickname: '老周同学',
-    phone: '15829330471',
     employee: '周敬',
     dept: '信息安全部',
     amount: 20,
@@ -175,7 +169,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2203',
     serial: '2203',
     nickname: '一只鹿',
-    phone: '18627340092',
     employee: '鹿鸣',
     dept: '能源互联事业部',
     amount: 2,
@@ -188,7 +181,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2202',
     serial: '2202',
     nickname: '一只鹿',
-    phone: '18627340092',
     employee: '鹿鸣',
     dept: '能源互联事业部',
     amount: 10,
@@ -201,7 +193,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2201',
     serial: '2201',
     nickname: '海涛',
-    phone: '13512480365',
     employee: '王海涛',
     dept: '平台管理部',
     amount: 1,
@@ -214,7 +205,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2200',
     serial: '2200',
     nickname: '海涛',
-    phone: '13512480365',
     employee: '王海涛',
     dept: '平台管理部',
     amount: 300,
@@ -227,7 +217,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2199',
     serial: '2199',
     nickname: '筱筱',
-    phone: '13905921188',
     employee: '汪筱',
     dept: '技术中心',
     amount: 268,
@@ -240,7 +229,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2198',
     serial: '2198',
     nickname: '风起东南',
-    phone: '13609127436',
     employee: '陆东南',
     dept: '装备制造事业部',
     amount: 143,
@@ -253,7 +241,6 @@ const SEED_LOGS: PointsLog[] = [
     id: 'PL-2197',
     serial: '2197',
     nickname: '老周同学',
-    phone: '15829330471',
     employee: '周敬',
     dept: '信息安全部',
     amount: 96,
@@ -312,11 +299,6 @@ let seq = 40
 function nextSeq() {
   seq += 1
   return seq
-}
-
-/** 手机号中间四位打码 */
-export function maskPhone(phone: string) {
-  return phone.replace(/^(\d{3})\d{4}(\d{4})$/, '$1****$2')
 }
 
 export function logTypeTone(t: PointsLogType) {

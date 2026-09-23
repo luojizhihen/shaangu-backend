@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, RefreshCcw } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -49,13 +49,11 @@ export default function CommentsPage() {
 
   const [newsTitle, setNewsTitle] = React.useState(fromNews)
   const [content, setContent] = React.useState('')
-  const [nickname, setNickname] = React.useState('')
   const [author, setAuthor] = React.useState('')
   const [state, setState] = React.useState('全部状态')
   const [query, setQuery] = React.useState({
     newsTitle: fromNews,
     content: '',
-    nickname: '',
     author: '',
     state: '全部状态',
   })
@@ -68,12 +66,11 @@ export default function CommentsPage() {
       comments.filter((c) => {
         const hitNews = c.newsTitle.includes(query.newsTitle.trim())
         const hitContent = c.content.includes(query.content.trim())
-        const hitNickname = c.nickname.includes(query.nickname.trim())
         const hitAuthor = c.author.includes(query.author.trim())
         const hitState =
           query.state === '全部状态' ||
           (query.state === '已隐藏' ? c.hidden : !c.hidden)
-        return hitNews && hitContent && hitNickname && hitAuthor && hitState
+        return hitNews && hitContent && hitAuthor && hitState
       }),
     [comments, query],
   )
@@ -81,20 +78,18 @@ export default function CommentsPage() {
   const table = useTableState(rows)
 
   function search() {
-    setQuery({ newsTitle, content, nickname, author, state })
+    setQuery({ newsTitle, content, author, state })
     table.setPage(1)
   }
 
   function reset() {
     setNewsTitle('')
     setContent('')
-    setNickname('')
     setAuthor('')
     setState('全部状态')
     setQuery({
       newsTitle: '',
       content: '',
-      nickname: '',
       author: '',
       state: '全部状态',
     })
@@ -117,12 +112,6 @@ export default function CommentsPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="资讯评论管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -141,13 +130,6 @@ export default function CommentsPage() {
             value={content}
             placeholder="请输入评论内容"
             onChange={(e) => setContent(e.target.value)}
-          />
-        </FilterField>
-        <FilterField label="昵称">
-          <Input
-            value={nickname}
-            placeholder="请输入昵称"
-            onChange={(e) => setNickname(e.target.value)}
           />
         </FilterField>
         <FilterField label="员工姓名">
@@ -206,7 +188,6 @@ export default function CommentsPage() {
               </TableHead>
               <TableHead className="min-w-56">所属资讯</TableHead>
               <TableHead className="min-w-64">评论内容</TableHead>
-              <TableHead className="w-32">昵称</TableHead>
               <TableHead className="w-28">员工姓名</TableHead>
               <TableHead className="w-28">所属部门</TableHead>
               <TableHead className="w-44">评论时间</TableHead>
@@ -216,7 +197,7 @@ export default function CommentsPage() {
           </TableHeader>
           <TableBody>
             {table.pageRows.length === 0 && (
-              <TableEmpty colSpan={10} text="没有符合条件的评论" />
+              <TableEmpty colSpan={9} text="没有符合条件的评论" />
             )}
             {table.pageRows.map((c, i) => (
               <TableRow key={c.id}>
@@ -243,7 +224,6 @@ export default function CommentsPage() {
                 <TableCell>
                   <span className="line-clamp-2 whitespace-normal">{c.content}</span>
                 </TableCell>
-                <TableCell>{c.nickname}</TableCell>
                 <TableCell>{c.author}</TableCell>
                 <TableCell className="text-muted-foreground">{c.dept}</TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">

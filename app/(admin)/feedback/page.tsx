@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, MessageSquareReply, RefreshCcw } from 'lucide-react'
+import { Download, MessageSquareReply } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useApp } from '@/components/app-store'
@@ -131,12 +131,6 @@ export default function FeedbackPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="意见反馈管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

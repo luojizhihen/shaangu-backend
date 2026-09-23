@@ -64,7 +64,6 @@ export type MallOrder = {
   /** 订单编号 */
   orderNo: string
   status: OrderStatus
-  nickname: string
   employee: string
   dept: string
   productId: string
@@ -275,7 +274,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2108',
     orderNo: 'NO20260806000008',
     status: '待领取',
-    nickname: '筱筱',
     employee: '汪筱',
     dept: '技术中心',
     productId: 'MP-08',
@@ -293,7 +291,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2107',
     orderNo: 'NO20260806000007',
     status: '待领取',
-    nickname: '一只鹿',
     employee: '鹿鸣',
     dept: '能源互联事业部',
     productId: 'MP-01',
@@ -311,7 +308,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2106',
     orderNo: 'NO20260805000006',
     status: '待领取',
-    nickname: '风起东南',
     employee: '陆东南',
     dept: '装备制造事业部',
     productId: 'MP-05',
@@ -329,7 +325,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2105',
     orderNo: 'NO20260804000005',
     status: '已领取',
-    nickname: '海涛',
     employee: '王海涛',
     dept: '平台管理部',
     productId: 'MP-06',
@@ -347,7 +342,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2104',
     orderNo: 'NO20260802000004',
     status: '已领取',
-    nickname: '老周同学',
     employee: '周敬',
     dept: '信息安全部',
     productId: 'MP-07',
@@ -365,7 +359,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2103',
     orderNo: 'NO20260731000003',
     status: '已领取',
-    nickname: '筱筱',
     employee: '汪筱',
     dept: '技术中心',
     productId: 'MP-04',
@@ -383,7 +376,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2102',
     orderNo: 'NO20260729000002',
     status: '已领取',
-    nickname: '一只鹿',
     employee: '鹿鸣',
     dept: '能源互联事业部',
     productId: 'MP-03',
@@ -401,7 +393,6 @@ const SEED_ORDERS: MallOrder[] = [
     id: 'MO-2101',
     orderNo: 'NO20260728000001',
     status: '已领取',
-    nickname: '风起东南',
     employee: '陆东南',
     dept: '装备制造事业部',
     productId: 'MP-02',

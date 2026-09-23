@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, RefreshCcw, ScrollText } from 'lucide-react'
+import { Download, ScrollText } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { NativeSelect, PageHeader, Panel, StatusTag } from '@/components/layout/page-frame'
@@ -101,10 +101,6 @@ export default function ForumGovernanceLogsPage() {
         title="论坛治理日志"
         actions={
           <>
-            <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-              <RefreshCcw className="size-4" />
-              刷新
-            </Button>
             <Button
               variant="outline"
               onClick={() => {

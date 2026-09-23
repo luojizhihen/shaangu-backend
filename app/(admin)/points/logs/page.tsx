@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { usePathname } from 'next/navigation'
-import { Download, RefreshCcw } from 'lucide-react'
+import { Download } from 'lucide-react'
 import { toast } from 'sonner'
 
 import {
@@ -94,12 +94,6 @@ export default function PointsLogsPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="积分日志"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>

@@ -9,7 +9,6 @@ import {
   KeyRound,
   Pencil,
   Plus,
-  RefreshCcw,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -287,12 +286,6 @@ export default function StaffPage() {
       <PageHeader
         breadcrumb={breadcrumbFor(pathname)}
         title="员工管理"
-        actions={
-          <Button variant="outline" onClick={() => toast.success('列表已刷新')}>
-            <RefreshCcw className="size-4" />
-            刷新
-          </Button>
-        }
       />
 
       <FilterBar onSearch={search} onReset={reset}>
@@ -423,7 +416,7 @@ export default function StaffPage() {
             </Button>
             <span className="ml-auto text-xs text-muted-foreground">
               系统新建 <span className="font-mono">{customCount}</span> 个 · NC
-              同步的员工只读，仅可启用/停用与重置密码
+              同步的员工只读，仅可启用/停用��重置密码
             </span>
           </Toolbar>
 
